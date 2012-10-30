@@ -16,7 +16,7 @@ Contents:
    :maxdepth: 1
 
    gettingStarted/index
-   exporting/index
+   metocean/index
    predicates/index
    developer/index
 
