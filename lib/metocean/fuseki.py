@@ -556,14 +556,17 @@ class FusekiServer(object):
             fCon = results[0]
         return fCon
 
-    def get(self, qstr, instr, debug=False):
+    def create(self, qstr, instr, debug=False):
         """obtain a json representation of a defined type
-        either by retriing or creating it
+        either by retrieving or creating it
+        qstr is a SPARQL query string 
+        instr is a SPARQL insert string
         """
         results = fuseki_process.run_query(qstr, debug=debug)
         if len(results) == 0:
             insert_results = fuseki_process.run_query(instr, update=True, debug=debug)
             results = fuseki_process.run_query(qstr, debug=debug)
+        return results
 
 def process_data(jsondata):
     """ helper method to take JSON output from a query and return the results"""

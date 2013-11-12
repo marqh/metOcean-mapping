@@ -330,7 +330,7 @@ class Component(_ComponentMixin, _DotMixin, MutableMapping):
         return qstr
 
     @staticmethod
-    def sparql_get(po_dict):
+    def sparql_creator(po_dict):
         allowed_prefixes = set(('mr:hasFormat','mr:hasComponent', 'mr:hasProperty',
                                 'dc:requires', 'dc:mediator'))
         preds = set(po_dict)
