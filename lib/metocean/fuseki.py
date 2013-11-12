@@ -209,12 +209,64 @@ class FusekiServer(object):
         files = os.path.join(self._static_dir, main_graph, '*.ttl')
         for subgraph in glob.glob(files):
             graph = 'http://%s/%s' % (main_graph, subgraph.split('/')[-1])
-            save_string = queries.save_cache(self, graph)
+            save_string = self.save_cache(graph)
             with open(subgraph, 'a') as sg:
                 for line in save_string.splitlines():
                     if not line.startswith('@prefix'):
                         sg.write(line)
-                        sg.write('\n')
+                       sg.write('\n')
+
+
+
+    def save_cache(self, graph, debug=False):
+        """
+        export new records from a graph in the triple store to an external location,
+        as flagged by the manager application
+        clear the 'not saved' flags on records, updating a graph in the triple store
+        with the fact that changes have been persisted to ttl
+
+        """
+        qstr = '''
+        CONSTRUCT
+        {
+            ?s ?p ?o .
+        }
+        WHERE
+        {
+        GRAPH <%s>
+        {
+        ?s ?p ?o ;
+            mr:saveCache "True" .
+        }
+        } 
+        ''' % graph
+        results = self.run_query(qstr, output="text", debug=debug)
+        qstr = '''
+        DELETE
+        {  GRAPH <%s>
+            {
+            ?s mr:saveCache "True" .
+            }
+        }
+        WHERE
+        {  GRAPH <%s>
+            {
+        ?s ?p ?o ;
+            mr:saveCache "True" .
+            }
+        } 
+        ''' % (graph,graph)
+        delete_results = self.run_query(qstr, update=True, debug=debug)
+        save_string = ''
+        for line in results.split('\n'):
+            if not line.strip().startswith('mr:saveCache'):
+                save_string += line
+                save_string += '\n'
+            else:
+                if line.endswith('.'):
+                    save_string += '\t.\n'
+        return save_string
+
 
     def revert(self):
         """
@@ -223,27 +275,29 @@ class FusekiServer(object):
         as the saved ttl files
         
         """
+        qstr = '''
+        DELETE
+        {  GRAPH <%s>
+            {
+            ?s ?p ?o .
+            }
+        }
+        WHERE
+        {  GRAPH <%s>
+            {
+            ?s ?p ?o ;
+            mr:saveCache "True" .
+            }
+        } 
+        '''
         main_graph = metocean.site_config['graph']
         files = os.path.join(self._static_dir, main_graph, '*.ttl')
         for infile in glob.glob(files):
             ingraph = infile.split('/')[-1]
             graph = 'http://%s/%s' % (main_graph, ingraph)
-            revert_string = queries.revert_cache(self, graph)
+            qstring = qstr % (graph, graph)
+            revert_string = self.run_query(qstr, update=True, debug=debug)
 
-    def query_cache(self):
-        """
-        identify all cached changes in the metocean graph
-
-        """
-        results = []
-        main_graph = metocean.site_config['graph']
-        files = os.path.join(self._static_dir, main_graph, '*.ttl')
-        for infile in glob.glob(files):
-            ingraph = infile.split('/')[-1]
-            graph = 'http://%s/%s' % (main_graph, ingraph)
-            result = queries.query_cache(self, graph)
-            results = results + result
-        return results
 
     def load(self):
         """
@@ -352,7 +406,9 @@ class FusekiServer(object):
         return mapping_list
 
     def _retrieve_component(self, uri, base=True):
-        qcomp = queries.retrieve_component(self, uri)
+        qstr = metocean.Component.sparql_retriever(uri)
+        qcomp = self.retrieve(qstr)
+        # qcomp = queries.retrieve_component(self, uri)
         if qcomp is None:
             msg = 'Cannot retrieve URI {!r} from triple-store.'
             raise ValueError(msg.format(uri))
@@ -457,6 +513,57 @@ class FusekiServer(object):
         target = self._retrieve_component(template['target'])
         return metocean.Mapping(uri, source, target)
 
+
+    def query_cache(self):
+        """
+        identify all cached changes in the metocean graph
+
+        """
+        qstr = '''
+        SELECT ?s ?p ?o
+        WHERE
+        {  GRAPH <%s>
+            {
+        ?s ?p ?o ;
+            mr:saveCache "True" .
+            }
+        } 
+        '''
+        results = []
+        main_graph = metocean.site_config['graph']
+        files = os.path.join(self._static_dir, main_graph, '*.ttl')
+        for infile in glob.glob(files):
+            ingraph = infile.split('/')[-1]
+            graph = 'http://%s/%s' % (main_graph, ingraph)
+            query_string = qstr % (graph)
+            result = self.run_query(query_string)
+            results = results + result
+        return results
+
+
+    def retrieve(self, qstr, debug=False):
+        """
+        Return a record from the provided id
+        or None if one does not exist.
+
+        """
+        results = self.run_query(qstr, debug=debug)
+        if len(results) == 0:
+            fCon = None
+        elif len(results) >1:
+            raise ValueError('{} is a malformed component'.format(results))
+        else:
+            fCon = results[0]
+        return fCon
+
+    def get(self, qstr, instr, debug=False):
+        """obtain a json representation of a defined type
+        either by retriing or creating it
+        """
+        results = fuseki_process.run_query(qstr, debug=debug)
+        if len(results) == 0:
+            insert_results = fuseki_process.run_query(instr, update=True, debug=debug)
+            results = fuseki_process.run_query(qstr, debug=debug)
 
 def process_data(jsondata):
     """ helper method to take JSON output from a query and return the results"""

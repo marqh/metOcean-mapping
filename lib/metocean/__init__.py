@@ -309,6 +309,110 @@ class Component(_ComponentMixin, _DotMixin, MutableMapping):
         for comp in self.components:
             comp.dot(graph, node, 'Component')
 
+    @staticmethod
+    def sparql_retriever(uri):
+        qstr = '''SELECT ?component ?format ?mediates 
+        (GROUP_CONCAT(?acomponent; SEPARATOR='&') AS ?subComponent)
+        (GROUP_CONCAT(?aproperty; SEPARATOR='&') AS ?property)
+        (GROUP_CONCAT(?arequires; SEPARATOR='&') AS ?requires)
+        WHERE {
+        GRAPH <http://metarelate.net/concepts.ttl> {
+            ?component mr:hasFormat ?format .
+            OPTIONAL{?component mr:hasComponent ?acomponent .}
+            OPTIONAL{?component mr:hasProperty ?aproperty .}
+            OPTIONAL{?component dc:requires ?arequires .}
+            OPTIONAL{?component dc:mediator ?mediates .}
+            FILTER(?component = %s)
+            }
+        }
+        GROUP BY ?component ?format ?mediates
+        ''' % fcId
+        return qstr
+
+    @staticmethod
+    def sparql_get(po_dict):
+        allowed_prefixes = set(('mr:hasFormat','mr:hasComponent', 'mr:hasProperty',
+                                'dc:requires', 'dc:mediator'))
+        preds = set(po_dict)
+        if not preds.issubset(allowed_prefixes):
+            ec = '{} is not a subset of the allowed predicates set for '\
+                 'a component record {}'
+            ec = ec.format(preds, allowed_prefixes)
+            raise ValueError(ec)
+        subj_pref = 'http://www.metarelate.net/metOcean/component'
+        search_string = ''
+        n_propertys = 0
+        n_components = 0
+        n_reqs = 0
+        for pred in po_dict:
+            if isinstance(po_dict[pred], list):
+                if pred == 'mr:format' and len(po_dict[pred]) != 1:
+                    ec = 'get_format_concept only accepts 1 mr:format statement '\
+                         ' The po_dict in this case is not valid {} '
+                    ec = ec.format(str(po_dict))
+                    raise ValueError(ec)
+                elif pred == 'dc:mediator' and len(po_dict[pred]) != 1:
+                    ec = 'get_format_concept only accepts 1 dc:mediator statement'\
+                         ' The po_dict in this case is not valid {} '
+                    ec = ec.format(str(po_dict))
+                    raise ValueError(ec)
+                elif pred == 'dc:requires':
+                    for obj in po_dict[pred]:
+                        search_string += '''
+                        %s %s ;''' % (pred, obj)
+                        n_reqs +=1
+                elif pred == 'mr:hasProperty':
+                    for obj in po_dict[pred]:
+                        search_string += '''
+                        %s %s ;''' % (pred, obj)
+                        n_propertys +=1
+                elif pred == 'mr:hasComponent':
+                    for obj in po_dict[pred]:
+                        search_string += '''
+                        %s %s ;''' % (pred, obj)
+                        n_components +=1
+                else:
+                    for obj in po_dict[pred]:
+                        search_string += '''
+                        %s %s ;''' % (pred, obj)
+            else:
+                search_string += '''
+                %s %s ;''' % (pred, po_dict[pred])
+                if pred == 'skos:member':
+                    n_members =1
+        if search_string != '':
+            qstr = '''SELECT ?component ?format
+            WHERE { {
+            SELECT ?component ?format
+            (COUNT(DISTINCT(?property)) AS ?propertys)
+            (COUNT(DISTINCT(?subComponent)) AS ?subComponents)
+            (COUNT(DISTINCT(?requires)) AS ?requireses)        
+            WHERE{
+            GRAPH <http://metarelate.net/concepts.ttl> {
+            ?component mr:hasFormat ?format ;
+                   %s .
+            OPTIONAL { ?component  mr:hasProperty ?property . }
+            OPTIONAL { ?component  mr:hasComponent ?subComponent . }
+            OPTIONAL{?component dc:requires ?requires .}
+            OPTIONAL{?component dc:mediator ?mediates .}
+            } }
+            GROUP BY ?component ?format 
+            }
+            FILTER(?subComponents = %i)
+            FILTER(?propertys = %i)
+            FILTER(?requireses = %i)
+            }
+            ''' % (search_string, n_components, n_propertys, n_reqs)
+            sha1 = make_hash(po_dict)
+            instr = '''INSERT DATA {
+            GRAPH <http://metarelate.net/concepts.ttl> {
+            <%s/%s> rdf:type mr:Component ;
+                    %s
+                    mr:saveCache "True" .
+            }
+            }
+            ''' % (subj_pref, sha1, search_string)
+        return qstr, instr
 
 class Concept(Component):
     """
