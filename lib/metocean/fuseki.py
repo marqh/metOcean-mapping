@@ -354,9 +354,11 @@ class FusekiServer(object):
         failures = {}
         mm_string = 'The following mappings are ambiguous, providing multiple '\
                     'targets in the same format for a particular source'
-        failures[mm_string] = queries.multiple_mappings(self)
+        # failures[mm_string] = queries.multiple_mappings(self)
+        failures[mm_string] = self.run_query(multiple_mappings())
         invalid_vocab = 'The following mappings contain an undeclared URI'
-        failures[invalid_vocab] = queries.valid_vocab(self)
+        # failures[invalid_vocab] = queries.valid_vocab(self)
+        failures[invalid_vocab] = self.run_query(valid_vocab())
         return failures
 
     def run_query(self, query_string, output='json', update=False, debug=False):
@@ -600,6 +602,16 @@ class FusekiServer(object):
             results = fuseki_process.run_query(qstr, debug=debug)
         return results
 
+    def mapping_by_properties(self, prop_list):
+        results = self.run_query(mapping_by_properties(prop_list))
+        maps = set([r['mapping'] for r in results])
+        if not mapping:
+            mappings = maps
+        else:
+            mappings.intersection_update(maps)
+    return mappings
+
+
 def process_data(jsondata):
     """ helper method to take JSON output from a query and return the results"""
     resultslist = []
@@ -635,3 +647,169 @@ def process_data(jsondata):
         if tmpdict != {}:
             resultslist.append(tmpdict)
     return resultslist
+
+
+def multiple_mappings(test_source=None):
+    """
+    returns all the mappings which map the same source to a different target
+    where the targets are the same format
+    filter to a single test mapping with test_map
+    
+    """
+    tm_filter = ''
+    if test_source:
+        pattern = '<http.*>'
+        pattern = re.compile(pattern)
+        if pattern.match(test_source):
+            tm_filter = '\n\tFILTER(?asource = {})'.format(test_source)
+    qstr = '''SELECT ?amap ?asource ?atarget ?bmap ?bsource ?btarget
+    (GROUP_CONCAT(DISTINCT(?value); SEPARATOR='&') AS ?signature)
+    WHERE {
+    GRAPH <http://metarelate.net/mappings.ttl> { {
+    ?amap mr:status ?astatus ;
+         mr:source ?asource ;
+         mr:target ?atarget . } 
+    UNION 
+        { 
+    ?amap mr:invertible "True" ;
+         mr:status ?astatus ;
+         mr:target ?asource ;
+         mr:source ?atarget . } 
+    FILTER (?astatus NOT IN ("Deprecated", "Broken"))
+    MINUS {?amap ^dc:replaces+ ?anothermap} %s
+    } 
+    GRAPH <http://metarelate.net/mappings.ttl> { {
+    ?bmap mr:status ?bstatus ;
+         mr:source ?bsource ;
+         mr:target ?btarget . } 
+    UNION  
+        { 
+    ?bmap mr:invertible "True" ;
+         mr:status ?bstatus ;
+         mr:target ?bsource ;
+         mr:source ?btarget . } 
+    FILTER (?bstatus NOT IN ("Deprecated", "Broken"))
+    MINUS {?bmap ^dc:replaces+ ?bnothermap}
+    filter (?bmap != ?amap)
+    filter (?bsource = ?asource)
+    filter (?btarget != ?atarget)
+    } 
+    GRAPH <http://metarelate.net/concepts.ttl> {
+    ?asource mr:hasFormat ?asourceformat .
+    ?bsource mr:hasFormat ?bsourceformat .
+    ?atarget mr:hasFormat ?atargetformat .
+    ?btarget mr:hasFormat ?btargetformat .
+    }
+    filter (?btargetformat = ?atargetformat)
+    GRAPH <http://metarelate.net/concepts.ttl> { {
+    ?asource mr:hasProperty ?prop . }
+    UNION {
+    ?atarget mr:hasProperty ?prop . }
+    UNION {
+    ?asource mr:hasComponent|mr:hasProperty ?prop . }
+    UNION {
+    ?atarget mr:hasComponent|mr:hasProperty ?prop . }
+    UNION { 
+    ?asource mr:hasProperty|mr:hasComponent|mr:hasProperty ?prop . }
+    UNION { 
+    ?atarget mr:hasProperty|mr:hasComponent|mr:hasProperty ?prop . }
+    OPTIONAL { ?prop rdf:value ?value . }
+    } }
+    GROUP BY ?amap ?asource ?atarget ?bmap ?bsource ?btarget
+    ORDER BY ?asource
+    ''' % tm_filter
+    return qstr
+
+def valid_vocab():
+    """
+    find all valid mapping and every property they reference
+
+    """
+    qstr = '''
+    SELECT DISTINCT  ?amap 
+    (GROUP_CONCAT(DISTINCT(?vocab); SEPARATOR = '&') AS ?signature)
+    WHERE {      
+    GRAPH <http://metarelate.net/mappings.ttl> { {  
+    ?amap mr:status ?astatus ; 
+    FILTER (?astatus NOT IN ("Deprecated", "Broken")) 
+    MINUS {?amap ^dc:replaces+ ?anothermap}      }
+    { 
+    ?amap mr:source ?fc .      }
+    UNION {
+    ?amap mr:target ?fc .      } } 
+    GRAPH <http://metarelate.net/concepts.ttl> { {
+    ?fc mr:hasProperty ?prop . }
+    UNION {
+    ?fc mr:hasComponent|mr:hasProperty ?prop . }
+    UNION { 
+    ?fc mr:hasProperty|mr:hasComponent|mr:hasProperty ?prop .
+    }
+    { ?prop mr:name ?vocab . }
+    UNION {
+    ?prop mr:operator ?vocab . }
+    UNION {
+    ?prop rdf:value ?vocab . }
+    FILTER(ISURI(?vocab))  }
+    OPTIONAL {GRAPH ?g{?vocab ?p ?o .} }
+    FILTER(!BOUND(?g))      }
+    GROUP BY ?amap
+    '''
+    return qstr
+
+
+def mapping_by_properties(prop_list):
+    """
+    Return the mapping id's which contain all of the proerties
+    in the list of property dictionaries
+    
+    """
+    mapping = None
+    for prop_dict in prop_list:
+        fstr = ''
+        name = prop_dict.get('mr:name')
+        op = prop_dict.get('mr:operator')
+        value = prop_dict.get('rdf:value')
+        if name:
+            fstr += '\tFILTER(?name = {})\n'.format(name)
+        if op:
+            fstr += '\tFILTER(?operator = {})\n'.format(op)
+        if value:
+            fstr += '\tFILTER(?value = {})\n'.format(value)
+            
+        qstr = '''SELECT DISTINCT ?mapping 
+        WHERE {
+        GRAPH <http://metarelate.net/mappings.ttl> {    
+        ?mapping rdf:type mr:Mapping ;
+                 mr:source ?source ;
+                 mr:target ?target ;
+                 mr:status ?status ;
+
+        FILTER (?status NOT IN ("Deprecated", "Broken"))
+        MINUS {?mapping ^dc:replaces+ ?anothermap}
+        }
+        GRAPH <http://metarelate.net/concepts.ttl> { {
+        ?source mr:hasProperty ?property
+        }
+        UNION {
+        ?target mr:hasProperty ?property
+        }
+        UNION {
+        ?source mr:hasComponent/mr:hasProperty ?property
+        }
+        UNION {
+        ?target mr:hasComponent/mr:hasProperty ?property
+        }
+        UNION {
+        ?source mr:hasProperty/mr:hasComponent/mr:hasProperty ?property
+        }
+        UNION {
+        ?target mr:hasProperty/mr:hasComponent/mr:hasProperty ?property
+        }
+        ?property mr:name ?name .
+        OPTIONAL{?property rdf:value ?value . }
+        OPTIONAL{?property mr:operator ?operator . }
+        %s
+        }
+        }
+        ''' % fstr
+    return qstr
