@@ -28,7 +28,7 @@ import urllib2
 
 import metocean
 import metocean.prefixes as prefixes
-import metocean.queries as queries
+#import metocean.queries as queries
 
 
 # Configure the Apache Jena environment.
@@ -205,6 +205,7 @@ class FusekiServer(object):
         remove saveCache flags after saving
         
         """
+        
         main_graph = metocean.site_config['graph']
         files = os.path.join(self._static_dir, main_graph, '*.ttl')
         for subgraph in glob.glob(files):
@@ -297,6 +298,32 @@ class FusekiServer(object):
             graph = 'http://%s/%s' % (main_graph, ingraph)
             qstring = qstr % (graph, graph)
             revert_string = self.run_query(qstr, update=True, debug=debug)
+
+    def query_cache(self):
+        """
+        identify all cached changes in the metocean graph
+
+        """
+        qstr = '''
+        SELECT ?s ?p ?o
+        WHERE
+        {  GRAPH <%s>
+            {
+        ?s ?p ?o ;
+            mr:saveCache "True" .
+            }
+        } 
+        '''
+        results = []
+        main_graph = metocean.site_config['graph']
+        files = os.path.join(self._static_dir, main_graph, '*.ttl')
+        for infile in glob.glob(files):
+            ingraph = infile.split('/')[-1]
+            graph = 'http://%s/%s' % (main_graph, ingraph)
+            query_string = qstr % (graph)
+            result = self.run_query(query_string)
+            results = results + result
+        return results
 
 
     def load(self):
@@ -399,7 +426,39 @@ class FusekiServer(object):
                 not metocean.Item(target).is_uri():
             target = os.path.join('<http://www.metarelate.net/metOcean/format',
                                   '{}>'.format(target.lower()))
-        mappings = queries.valid_ordered_mappings(self, source, target)
+        qstr = '''
+        SELECT ?mapping ?source ?sourceFormat ?target ?targetFormat ?inverted
+        (GROUP_CONCAT(DISTINCT(?valueMap); SEPARATOR = '&') AS ?valueMaps)
+        WHERE { 
+        GRAPH <http://metarelate.net/mappings.ttl> { {
+        ?mapping mr:source ?source ;
+                 mr:target ?target ;
+                 mr:status ?status .
+        BIND("False" AS ?inverted)
+        OPTIONAL {?mapping mr:hasValueMap ?valueMap . }
+        FILTER (?status NOT IN ("Deprecated", "Broken"))
+        MINUS {?mapping ^dc:replaces+ ?anothermap}
+        }
+        UNION {
+        ?mapping mr:source ?target ;
+                 mr:target ?source ;
+                 mr:status ?status ;
+                 mr:invertible "True" .
+        BIND("True" AS ?inverted)
+        OPTIONAL {?mapping mr:hasValueMap ?valueMap . }
+        FILTER (?status NOT IN ("Deprecated", "Broken"))
+        MINUS {?mapping ^dc:replaces+ ?anothermap}
+        } }
+        GRAPH <http://metarelate.net/concepts.ttl> { 
+        ?source mr:hasFormat %s .
+        ?target mr:hasFormat %s .
+        }
+        }
+        GROUP BY ?mapping ?source ?sourceFormat ?target ?targetFormat ?inverted
+        ORDER BY ?mapping
+
+        ''' % (source, target)
+        mappings = self.run_query(qstr)
         mapping_list = []
         for mapping in mappings:
             mapping_list.append(self.structured_mapping(mapping))
@@ -512,34 +571,7 @@ class FusekiServer(object):
         source = self._retrieve_component(template['source'])
         target = self._retrieve_component(template['target'])
         return metocean.Mapping(uri, source, target)
-
-
-    def query_cache(self):
-        """
-        identify all cached changes in the metocean graph
-
-        """
-        qstr = '''
-        SELECT ?s ?p ?o
-        WHERE
-        {  GRAPH <%s>
-            {
-        ?s ?p ?o ;
-            mr:saveCache "True" .
-            }
-        } 
-        '''
-        results = []
-        main_graph = metocean.site_config['graph']
-        files = os.path.join(self._static_dir, main_graph, '*.ttl')
-        for infile in glob.glob(files):
-            ingraph = infile.split('/')[-1]
-            graph = 'http://%s/%s' % (main_graph, ingraph)
-            query_string = qstr % (graph)
-            result = self.run_query(query_string)
-            results = results + result
-        return results
-
+    
 
     def retrieve(self, qstr, debug=False):
         """
