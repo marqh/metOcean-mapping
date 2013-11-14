@@ -904,6 +904,7 @@ class Property(_DotMixin, namedtuple('Property', 'uri name value operator')):
         }
         GROUP BY ?property ?name ?operator ?component
         ''' % uri
+        return qstr
 
     @staticmethod
     def sparql_creator(po_dict):
