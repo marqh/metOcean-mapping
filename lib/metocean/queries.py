@@ -316,10 +316,13 @@ def get_label(fuseki_process, subject, debug=False):
         hash_split = subject.split('#')
         if len(hash_split) == 2 and hash_split[1].endswith('>'):
             label = hash_split[1].rstrip('>')
+        elif len(subject.split('/')) < 3:
+             label = subject
         else:
-            label = subject
+            raise ValueError('{} returns no notation'.format(subject))
+            # label = subject
     elif len(results) >1:
-        raise ValueError('{} returns multiple prefLabels'.format(subject))
+        raise ValueError('{} returns multiple notation'.format(subject))
     else:
         label = results[0]['notation']
     return label

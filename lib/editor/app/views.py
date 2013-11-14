@@ -50,7 +50,6 @@ def home(request):
     and reporting on status
     
     """
-    """ helper for command line query interpretation"""
     persist = fuseki_process.query_cache()
     cache_status = '{} statements in the local triple store are' \
                    ' flagged as not existing in the persistent ' \
@@ -187,7 +186,7 @@ def _create_components(key, requestor, new_map, components):
             newm['component'] = '%s' % sub_comp['component']
     comp_dict = {'mr:hasFormat':'%s' % requestor[key]['mr:hasFormat'],
                                 'mr:hasComponent':subc_ids}
-    qstr, instr = metocean.Component.sparql_creator)
+    qstr, instr = metocean.Component.sparql_creator()
     comp = fuseki_process.create(qstr, instr)
     # comp = moq.get_component(fuseki_process, comp_dict)
     if comp:
@@ -624,7 +623,7 @@ def create_mediator(request, fformat):
         form = forms.NewMediator()
     if request.method == 'POST' and form.is_valid():
         mediator = form.cleaned_data['mediator']
-        po_dict = {'mr:hasFormat'fformat:,'rdf:label':mediator}
+        po_dict = {'mr:hasFormat': fformat,'rdf:label': mediator}
         # moq.create_mediator(fuseki_process, mediator, fformat)
         qstr, instr = metocean.Mediator.sparql_creator(po_dict)
         res = fuseki_process.create(qstr, instr)
@@ -677,7 +676,7 @@ def _get_value(value):
                 #                       {'mr:hasProperty':oprop['property'],
                 #                     'mr:scope':value['mr:object']['mr:scope']})
                 po_dict = {'mr:hasProperty':oprop['property'],
-                           'mr:scope':value['mr:object']['mr:scope']})
+                           'mr:scope':value['mr:object']['mr:scope']}
                 qstr, instr = metocean.ScopedProperty.sparql_creator(po_dict)
                 o_sc_prop = fuseki_process.create(qstr, instr)
                 obj_id = o_sc_prop['scopedProperty']
