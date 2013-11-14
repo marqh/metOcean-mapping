@@ -928,7 +928,7 @@ def mapping_edit(request):
     if requestor_path == '':
         requestor_path = '{}'
     requestor = json.loads(requestor_path)
-    print requestor
+    # print requestor
     fname = None
     if request.method == 'POST':
         form = forms.MappingMeta(request.POST)
@@ -950,12 +950,13 @@ def mapping_edit(request):
                                                                [])])}
         map_id = requestor.get('mapping')
         if map_id:
-            # mapping = moq.get_mapping_by_id(fuseki_process, map_id, val=False)
+            # mapping = moq.get_mapping_by_id(fuseki_process, map_id, valid=False)
             qstr = metocean.Mapping.sparql_retriever(map_id, valid=False)
             mapping = fuseki_process.retrieve(qstr)
             ## quick example of dot notation, needs refactor
             amap = mapping.copy()
             map_instance = fuseki_process.structured_mapping(amap)
+            # print map_instance
             fname = map_id.split('/')[-1].rstrip('>') + '.png'
             outfile = os.path.join(os.path.dirname(__file__), 'static',
                                    'tmp_images', fname)
@@ -967,6 +968,7 @@ def mapping_edit(request):
                   mapping.get('hasValueMaps', '').split('&').sort()
             # if ts and tt and tvm:
             initial = mapping
+            initial['editor'] = initial.pop('creator')
             initial['source'] = requestor.get('mr:source').get('component')
             initial['target'] =  requestor.get('mr:target').get('component')
             initial['valueMaps'] = '&'.join([vm.get('valueMap') for vm in
@@ -986,6 +988,7 @@ def mapping_edit(request):
 #         else:
 #            fname = None
         form = forms.MappingMeta(initial)
+        # form = forms.MappingMeta()
     con_dict = {}
     con_dict['mapping'] = requestor
     if fname:
@@ -1039,7 +1042,7 @@ def process_form(form, requestor_path):
     # mapping = moq.create_mapping(fuseki_process, mapping_p_o)
     qstr, instr = metocean.Mapping.sparql_creator(mapping_p_o)
     mapping = fuseki_process.create(qstr, instr)
-    map_id = mapping[0]['map']
+    map_id = mapping['mapping']
 
     return map_id
 

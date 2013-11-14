@@ -418,8 +418,8 @@ class MappingMeta(forms.Form):
         #  worried about this, prevents updates to deprecate etc
         if map_id:
             #mapping = moq.get_mapping_by_id(fuseki_process, map_id)
-            qstr = metocean.Mapping.get_mapping_by_id(map_id)
-            mapping = fuseki_process.run_query(qstr)
+            qstr = metocean.Mapping.sparql_retriever(map_id)
+            mapping = fuseki_process.retrieve(qstr)
             if not mapping:
                 raise forms.ValidationError('the mapping Id is not valid')
             changed = False

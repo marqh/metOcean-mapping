@@ -16,6 +16,7 @@
 # along with metOcean-mapping. If not, see <http://www.gnu.org/licenses/>.
 
 from collections import Iterable, MutableMapping, namedtuple
+import hashlib
 import os
 from urlparse import urlparse
 
@@ -178,7 +179,7 @@ class Mapping(_DotMixin, namedtuple('Mapping', 'uri source target')):
     @staticmethod
     def sparql_retriever(uri, valid=True, rep=True):
         vstr = ''
-        if val:
+        if valid:
             vstr += '\tFILTER (?status NOT IN ("Deprecated", "Broken"))'
         if rep:
             vstr += '\n\tMINUS {?mapping ^dc:replaces+ ?anothermap}'

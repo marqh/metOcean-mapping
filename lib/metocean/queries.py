@@ -177,23 +177,23 @@ def _vocab_graphs():
 #     results = fuseki_process.run_query(qstr, debug=debug)
 #     return results
 
-# def get_contacts(fuseki_process, register, debug=False):
-#     """
-#     return a list of contacts from the tdb which are part of the named register
+def get_contacts(fuseki_process, register, debug=False):
+    """
+    return a list of contacts from the tdb which are part of the named register
     
-#     """
-#     qstr = '''
-#     SELECT ?s ?prefLabel ?def
-#     WHERE
-#     { GRAPH <http://metarelate.net/contacts.ttl> {
-#         ?s skos:inScheme <http://www.metarelate.net/metOcean/%s> ;
-#            skos:prefLabel ?prefLabel ;
-#            skos:definition ?def ;
-#            dc:valid ?valid .
-#     } }
-#     ''' % register
-#     results = fuseki_process.run_query(qstr, debug=debug)
-#     return results
+    """
+    qstr = '''
+    SELECT ?s ?prefLabel ?def
+    WHERE
+    { GRAPH <http://metarelate.net/contacts.ttl> {
+        ?s skos:inScheme <http://www.metarelate.net/metOcean/%s> ;
+           skos:prefLabel ?prefLabel ;
+           skos:definition ?def ;
+           dc:valid ?valid .
+    } }
+    ''' % register
+    results = fuseki_process.run_query(qstr, debug=debug)
+    return results
 
 # def create_contact(fuseki_process, reg, contact, gh_id, creation, debug=False):
 #     """
@@ -319,8 +319,8 @@ def get_label(fuseki_process, subject, debug=False):
         elif len(subject.split('/')) < 3:
              label = subject
         else:
-            raise ValueError('{} returns no notation'.format(subject))
-            # label = subject
+            # raise ValueError('{} returns no notation'.format(subject))
+            label = subject
     elif len(results) >1:
         raise ValueError('{} returns multiple notation'.format(subject))
     else:
@@ -981,14 +981,14 @@ def subject_and_plabel(fuseki_process, graph, debug=False):
 #     return [{'map':'<{}>'.format(mapping)}]
 
 
-# def get_mapping_by_id(fuseki_process, map_id, val=True, rep=True, debug=False):
+# def get_mapping_by_id(fuseki_process, map_id, valid=True, rep=True, debug=False):
 #     """
 #     return a mapping record if one exists,
 #     from the provided map_id
     
 #     """
 #     vstr = ''
-#     if val:
+#     if valid:
 #         vstr += '\tFILTER (?status NOT IN ("Deprecated", "Broken"))'
 #     if rep:
 #         vstr += '\n\tMINUS {?mapping ^dc:replaces+ ?anothermap}'

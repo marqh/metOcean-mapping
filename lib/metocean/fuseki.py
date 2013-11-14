@@ -297,7 +297,7 @@ class FusekiServer(object):
             ingraph = infile.split('/')[-1]
             graph = 'http://%s/%s' % (main_graph, ingraph)
             qstring = qstr % (graph, graph)
-            revert_string = self.run_query(qstr, update=True, debug=debug)
+            revert_string = self.run_query(qstring, update=True)
 
     def query_cache(self):
         """
@@ -606,14 +606,20 @@ class FusekiServer(object):
         qstr is a SPARQL query string 
         instr is a SPARQL insert string
         """
-        results = fuseki_process.run_query(qstr, debug=debug)
+        results = self.run_query(qstr, debug=debug)
         if len(results) == 0:
-            insert_results = fuseki_process.run_query(instr, update=True, debug=debug)
-            results = fuseki_process.run_query(qstr, debug=debug)
+            insert_results = self.run_query(instr, update=True, debug=debug)
+            results = self.run_query(qstr, debug=debug)
+        if len(results) == 1:
+            results = results[0]
+        else:
+            ec = '{} results returned, one expected'.format(len(results))
+            raise ValueError(ec)
         return results
 
     def mapping_by_properties(self, prop_list):
         results = self.run_query(mapping_by_properties(prop_list))
+        mapping = None
         maps = set([r['mapping'] for r in results])
         if not mapping:
             mappings = maps
@@ -773,7 +779,6 @@ def mapping_by_properties(prop_list):
     in the list of property dictionaries
     
     """
-    mapping = None
     for prop_dict in prop_list:
         fstr = ''
         name = prop_dict.get('mr:name')
