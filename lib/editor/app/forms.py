@@ -106,7 +106,9 @@ class Mediator(forms.Form):
     def __init__(self, *args, **kwargs):
         fformat = kwargs.pop('fformat')
         super(Mediator, self).__init__(*args, **kwargs)
-        meds = moq.get_mediators(fuseki_process, fformat)
+        # meds = moq.get_mediators(fuseki_process, fformat)
+        qstr = metocean.Mediator.sparql_retriever(fformat)
+        meds = fuseki_process.retrieve(qstr)
         if isinstance(meds, list):
             meds = [(med['mediator'], med['label']) for med in meds]
         else:

@@ -238,28 +238,28 @@ def _vocab_graphs():
 #     results = fuseki_process.run_query(qstr, update=True, debug=debug)
 #     return results
 
-def get_mediators(fuseki_process, fformat='', debug=False):
-    """
-    return all mediators from the triple store
-    fformat limits the mediators to one format
+# def get_mediators(fuseki_process, fformat='', debug=False):
+#     """
+#     return all mediators from the triple store
+#     fformat limits the mediators to one format
     
-    """
-    if fformat:
-        ffilter = 'FILTER(?format = <http://www.metarelate.net/metOcean/format/{}>)'
-        ffilter = ffilter.format(fformat)
-    else:
-        ffilter = ''
-    qstr = '''
-    SELECT ?mediator ?format ?label
-    WHERE
-    { GRAPH <http://metarelate.net/concepts.ttl> {
-        ?mediator mr:hasFormat ?format ;
-                  rdf:label ?label .
-    %s
-    } }
-    ''' % ffilter
-    results = fuseki_process.run_query(qstr, debug=debug)
-    return results
+#     """
+#     if fformat:
+#         ffilter = 'FILTER(?format = <http://www.metarelate.net/metOcean/format/{}>)'
+#         ffilter = ffilter.format(fformat)
+#     else:
+#         ffilter = ''
+#     qstr = '''
+#     SELECT ?mediator ?format ?label
+#     WHERE
+#     { GRAPH <http://metarelate.net/concepts.ttl> {
+#         ?mediator mr:hasFormat ?format ;
+#                   rdf:label ?label .
+#     %s
+#     } }
+#     ''' % ffilter
+#     results = fuseki_process.run_query(qstr, debug=debug)
+#     return results
     
 
 # def print_records(res):

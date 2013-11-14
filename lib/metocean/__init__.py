@@ -419,7 +419,7 @@ class Component(_ComponentMixin, _DotMixin, MutableMapping):
             }
         }
         GROUP BY ?component ?format ?mediates
-        ''' % fcId
+        ''' % uri
         return qstr
 
     @staticmethod
@@ -891,94 +891,96 @@ class Property(_DotMixin, namedtuple('Property', 'uri name value operator')):
 
     @staticmethod
     def sparql_retriever(uri):
-    qstr = '''SELECT ?property ?name ?operator ?component
-    (GROUP_CONCAT(?avalue; SEPARATOR='&') AS ?value)
-    WHERE {
-    GRAPH <http://metarelate.net/concepts.ttl> {
-        ?property mr:name ?name .
-        OPTIONAL { ?property rdf:value ?avalue ;
-                  mr:operator ?operator . }
-        OPTIONAL {?property mr:hasComponent ?component . }
-        FILTER(?property = %s)
+        qstr = '''SELECT ?property ?name ?operator ?component
+        (GROUP_CONCAT(?avalue; SEPARATOR='&') AS ?value)
+        WHERE {
+        GRAPH <http://metarelate.net/concepts.ttl> {
+            ?property mr:name ?name .
+            OPTIONAL { ?property rdf:value ?avalue ;
+                      mr:operator ?operator . }
+            OPTIONAL {?property mr:hasComponent ?component . }
+            FILTER(?property = %s)
+            }
         }
-    }
-    GROUP BY ?property ?name ?operator ?component
-    ''' % prop_id
+        GROUP BY ?property ?name ?operator ?component
+        ''' % uri
 
     @staticmethod
     def sparql_creator(po_dict):
-    allowed_predicates = set(('mr:name','rdf:value',
-                            'mr:operator', 'mr:hasComponent'))
-    single_predicates = set(('mr:name', 'mr:operator', 'mr:hasComponent'))
-    preds = set(po_dict)
-    if not preds.issubset(allowed_predicates):
-        ec = '{} is not a subset of the allowed predicates set '\
-             'for a value record {}'
-        ec = ec.format(preds, allowed_predicates)
-        raise ValueError(ec)
-    subj_pref = 'http://www.metarelate.net/metOcean/property'
-    count_string = ''
-    search_string = ''
-    filter_string = ''
-    assign_string = ''
-    block_string = ''
-    for pred in allowed_predicates.intersection(preds):
-        if isinstance(po_dict[pred], list):
-            if len(po_dict[pred]) != 1 and pred in single_predicates:
-                ec = 'get_property only accepts 1 statement per predicate {}'
-                ec = ec.format(str(po_dict))
-                raise ValueError(ec)
+        qstr = ''
+        instr = ''
+        allowed_predicates = set(('mr:name','rdf:value',
+                                'mr:operator', 'mr:hasComponent'))
+        single_predicates = set(('mr:name', 'mr:operator', 'mr:hasComponent'))
+        preds = set(po_dict)
+        if not preds.issubset(allowed_predicates):
+            ec = '{} is not a subset of the allowed predicates set '\
+                 'for a value record {}'
+            ec = ec.format(preds, allowed_predicates)
+            raise ValueError(ec)
+        subj_pref = 'http://www.metarelate.net/metOcean/property'
+        count_string = ''
+        search_string = ''
+        filter_string = ''
+        assign_string = ''
+        block_string = ''
+        for pred in allowed_predicates.intersection(preds):
+            if isinstance(po_dict[pred], list):
+                if len(po_dict[pred]) != 1 and pred in single_predicates:
+                    ec = 'get_property only accepts 1 statement per predicate {}'
+                    ec = ec.format(str(po_dict))
+                    raise ValueError(ec)
+                else:
+                    counter = 0
+                    for obj in po_dict[pred]:
+                        search_string += '''
+                        %s %s ;''' % (pred, obj)
+                        counter +=1
+                    assign_string += '''
+                    %s ?%s ;''' % (pred, pred.split(':')[-1])
+                    count_string += '''COUNT(DISTINCT(?%(p)s)) AS ?%(p)ss
+                    ''' % {'p':pred.split(':')[-1]}
+                    filter_string += '''
+                    FILTER(?%ss = %i)''' % (pred.split(':')[-1], counter)
             else:
-                counter = 0
-                for obj in po_dict[pred]:
-                    search_string += '''
-                    %s %s ;''' % (pred, obj)
-                    counter +=1
+                search_string += '''
+                %s %s ;''' % (pred, po_dict[pred])
                 assign_string += '''
                 %s ?%s ;''' % (pred, pred.split(':')[-1])
-                count_string += '''COUNT(DISTINCT(?%(p)s)) AS ?%(p)ss
+                count_string += '''(COUNT(DISTINCT(?%(p)s)) AS ?%(p)ss)
                 ''' % {'p':pred.split(':')[-1]}
                 filter_string += '''
-                FILTER(?%ss = %i)''' % (pred.split(':')[-1], counter)
-        else:
-            search_string += '''
-            %s %s ;''' % (pred, po_dict[pred])
-            assign_string += '''
-            %s ?%s ;''' % (pred, pred.split(':')[-1])
-            count_string += '''(COUNT(DISTINCT(?%(p)s)) AS ?%(p)ss)
-            ''' % {'p':pred.split(':')[-1]}
-            filter_string += '''
-            FILTER(?%ss = %i)''' % (pred.split(':')[-1], 1)
-    for pred in allowed_predicates.difference(preds):
-        block_string += '\n\t OPTIONAL{?property %s ?%s .}' % (pred, pred.split(':')[-1])
-        block_string += '\n\t FILTER(!BOUND(?%s))' % pred.split(':')[-1]
-    if search_string != '':
-        qstr = '''SELECT ?property
-        WHERE { {
-        SELECT ?property        
-        %(count)s
-        WHERE{
-        GRAPH <http://metarelate.net/concepts.ttl> {
-        ?property %(assign)s %(search)s
-        .
-        %(block)s
-        } }
-        GROUP BY ?property
-        }
-        %(filter)s
-        }
-        ''' % {'count':count_string,'assign':assign_string,
-               'search':search_string, 'filter':filter_string,
-               'block':block_string}
-        sha1 = make_hash(po_dict)
-        instr = '''INSERT DATA {
-        GRAPH <http://metarelate.net/concepts.ttl> {
-        <%s/%s> rdf:type mr:Property ;
-                %s
-        mr:saveCache "True" .
-        }
-        }
-        ''' % (subj_pref, sha1, search_string)
+                FILTER(?%ss = %i)''' % (pred.split(':')[-1], 1)
+        for pred in allowed_predicates.difference(preds):
+            block_string += '\n\t OPTIONAL{?property %s ?%s .}' % (pred, pred.split(':')[-1])
+            block_string += '\n\t FILTER(!BOUND(?%s))' % pred.split(':')[-1]
+        if search_string != '':
+            qstr = '''SELECT ?property
+            WHERE { {
+            SELECT ?property        
+            %(count)s
+            WHERE{
+            GRAPH <http://metarelate.net/concepts.ttl> {
+            ?property %(assign)s %(search)s
+            .
+            %(block)s
+            } }
+            GROUP BY ?property
+            }
+            %(filter)s
+            }
+            ''' % {'count':count_string,'assign':assign_string,
+                   'search':search_string, 'filter':filter_string,
+                   'block':block_string}
+            sha1 = make_hash(po_dict)
+            instr = '''INSERT DATA {
+            GRAPH <http://metarelate.net/concepts.ttl> {
+            <%s/%s> rdf:type mr:Property ;
+                    %s
+            mr:saveCache "True" .
+            }
+            }
+            ''' % (subj_pref, sha1, search_string)
         return qstr, instr
 
 class Item(_DotMixin, namedtuple('Item', 'data notation')):
@@ -1125,7 +1127,7 @@ class ValueMap(object):
             }
             }
             ''' % (subj_pref, sha1, search_string)
-       return qstr, instr
+        return qstr, instr
 
 
 class Value(object):
@@ -1189,7 +1191,7 @@ class Value(object):
             }
             }
             ''' % (subj_pref, sha1, search_string)
-       return qstr, instr
+        return qstr, instr
 
 
 class ScopedProperty(object):
@@ -1252,14 +1254,27 @@ class ScopedProperty(object):
             }
             }
             ''' % (subj_pref, sha1, search_string)
-       return qstr, instr
+        return qstr, instr
 
 
-class mediator(object):
-    # @staticmethod
-    # def sparql_retriever(uri):
-
-    #     return qstr
+class Mediator(object):
+    @staticmethod
+    def sparql_retriever(uri, fformat=''):
+        if fformat:
+            ffilter = 'FILTER(?format = <http://www.metarelate.net/metOcean/format/{}>)'
+            ffilter = ffilter.format(fformat)
+        else:
+            ffilter = ''
+        qstr = '''
+        SELECT ?mediator ?format ?label
+        WHERE
+        { GRAPH <http://metarelate.net/concepts.ttl> {
+            ?mediator mr:hasFormat ?format ;
+                      rdf:label ?label .
+        %s
+        } }
+        ''' % ffilter
+        return qstr
 
     @staticmethod
     def sparql_creator(po_dict):
@@ -1294,7 +1309,7 @@ class mediator(object):
              mr:saveCache "True" .
              } }
         ''' % (med, label, fformat)
-       return qstr, instr
+        return qstr, instr
 
 def make_hash(pred_obj, omitted=None):
     """ creates and returns an sha-1 hash of the elements in the pred_obj

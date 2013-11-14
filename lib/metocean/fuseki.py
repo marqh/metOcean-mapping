@@ -28,7 +28,7 @@ import urllib2
 
 import metocean
 import metocean.prefixes as prefixes
-#import metocean.queries as queries
+import metocean.queries as queries
 
 
 # Configure the Apache Jena environment.
@@ -215,7 +215,7 @@ class FusekiServer(object):
                 for line in save_string.splitlines():
                     if not line.startswith('@prefix'):
                         sg.write(line)
-                       sg.write('\n')
+                        sg.write('\n')
 
 
 
@@ -481,7 +481,9 @@ class FusekiServer(object):
         if qcomp['property']:
             properties = []
             for puri in qcomp['property']:
-                qprop = queries.retrieve_property(self, puri)
+                # qprop = queries.retrieve_property(self, puri)
+                qstr = metocean.Property.sparql_retriever(puri)
+                qprop = self.retrieve(qstr)
                 name = qprop['name']
                 name = metocean.Item(name,
                                      queries.get_label(self, name))
@@ -525,7 +527,9 @@ class FusekiServer(object):
         else:
             raise ValueError('inv = {}, not "True" or "False"'.format(inv))
         value_map = {'valueMap':valmap_id, 'mr:source':{}, 'mr:target':{}}
-        vm_record = queries.retrieve_valuemap(self, valmap_id)
+        # vm_record = queries.retrieve_valuemap(self, valmap_id)
+        qstr = metocean.ValueMap.sparql_retriever(valmap_id)
+        vm_record = self.retrieve(qstr)
         if inv:
             value_map['mr:source']['value'] = vm_record['target']
             value_map['mr:target']['value'] = vm_record['source']
@@ -543,13 +547,17 @@ class FusekiServer(object):
         
         """
         value_dict = {'value':val_id}
-        val = queries.retrieve_value(self, val_id)
+        # val = queries.retrieve_value(self, val_id)
+        qstr = metocean.Value.sparql_retriever(val_id)
+        val = self.retrieve(qstr)
         for key in val.keys():
             value_dict['mr:{}'.format(key)] = val[key]
         for sc_prop in ['mr:subject', 'mr:object']:
             pid = value_dict.get(sc_prop)
             if pid:
-                prop = queries.retrieve_scoped_property(self, pid)
+                # prop = queries.retrieve_scoped_property(self, pid)
+                qstr = metocean.ScopedProperty.sparql_retriever(pid)
+                prop = self.retrieve(qstr)
                 if prop:
                     value_dict[sc_prop] = {}
                     for pkey in prop:
@@ -557,7 +565,9 @@ class FusekiServer(object):
                         value_dict[sc_prop]['mr:{}'.format(pkey)] = pv
                         if pkey == 'hasProperty':
                             pr = value_dict[sc_prop]['mr:{}'.format(pkey)]
-                            aprop = queries.retrieve_property(self, pr)
+                            # aprop = queries.retrieve_property(self, pr)
+                            qstr = metocean.Property.sparql_retriever(pr)
+                            aprop = self.retrieve(qstr)
                             value_dict[sc_prop]['mr:{}'.format(pkey)] = {'property':pv}
                             for p in aprop:
                                 value_dict[sc_prop]['mr:{}'.format(pkey)]['mr:{}'.format(p)] = aprop[p]
@@ -609,7 +619,7 @@ class FusekiServer(object):
             mappings = maps
         else:
             mappings.intersection_update(maps)
-    return mappings
+        return mappings
 
 
 def process_data(jsondata):
@@ -624,7 +634,7 @@ def process_data(jsondata):
     for item in data:
         tmpdict = {}
         for var in vars:
-            tmpvar = item.getvar)
+            tmpvar = item.get(var)
             if tmpvar:
                 val = tmpvar.get('value')
                 if str(val).startswith('http://') or \
