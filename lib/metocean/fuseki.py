@@ -624,7 +624,7 @@ def process_data(jsondata):
     for item in data:
         tmpdict = {}
         for var in vars:
-            tmpvar = item.get(var)
+            tmpvar = item.getvar)
             if tmpvar:
                 val = tmpvar.get('value')
                 if str(val).startswith('http://') or \

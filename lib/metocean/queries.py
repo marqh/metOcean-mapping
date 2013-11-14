@@ -177,66 +177,66 @@ def _vocab_graphs():
 #     results = fuseki_process.run_query(qstr, debug=debug)
 #     return results
 
-def get_contacts(fuseki_process, register, debug=False):
-    """
-    return a list of contacts from the tdb which are part of the named register
+# def get_contacts(fuseki_process, register, debug=False):
+#     """
+#     return a list of contacts from the tdb which are part of the named register
     
-    """
-    qstr = '''
-    SELECT ?s ?prefLabel ?def
-    WHERE
-    { GRAPH <http://metarelate.net/contacts.ttl> {
-        ?s skos:inScheme <http://www.metarelate.net/metOcean/%s> ;
-           skos:prefLabel ?prefLabel ;
-           skos:definition ?def ;
-           dc:valid ?valid .
-    } }
-    ''' % register
-    results = fuseki_process.run_query(qstr, debug=debug)
-    return results
+#     """
+#     qstr = '''
+#     SELECT ?s ?prefLabel ?def
+#     WHERE
+#     { GRAPH <http://metarelate.net/contacts.ttl> {
+#         ?s skos:inScheme <http://www.metarelate.net/metOcean/%s> ;
+#            skos:prefLabel ?prefLabel ;
+#            skos:definition ?def ;
+#            dc:valid ?valid .
+#     } }
+#     ''' % register
+#     results = fuseki_process.run_query(qstr, debug=debug)
+#     return results
 
-def create_contact(fuseki_process, reg, contact, gh_id, creation, debug=False):
-    """
-    create a new contact
-    """
-    ## VITAL
-    ## check contact name is not currently taken
-    qstr = '''
-    INSERT DATA
-    { GRAPH <http://metarelate.net/contacts.ttl> {
-    <http://www.metarelate.net/metOcean/%(reg)s/%(name)s> a skos:Concept ;
-    skos:inScheme <http://www.metarelate.net/metOcean/%(reg)s> ;
-    skos:definition %(ghid)s .
-    dc:valid "%(creation)s"^^xsd:dateTime  .
-    } }
-    ''' % {'name':contact ,'reg':reg,
-           'ghid': gh_id, 'creation':creation}
-    results = fuseki_process.run_query(qstr, update=True, debug=debug)
-    return results
+# def create_contact(fuseki_process, reg, contact, gh_id, creation, debug=False):
+#     """
+#     create a new contact
+#     """
+#     ## VITAL
+#     ## check contact name is not currently taken
+#     qstr = '''
+#     INSERT DATA
+#     { GRAPH <http://metarelate.net/contacts.ttl> {
+#     <http://www.metarelate.net/metOcean/%(reg)s/%(name)s> a skos:Concept ;
+#     skos:inScheme <http://www.metarelate.net/metOcean/%(reg)s> ;
+#     skos:definition %(ghid)s .
+#     dc:valid "%(creation)s"^^xsd:dateTime  .
+#     } }
+#     ''' % {'name':contact ,'reg':reg,
+#            'ghid': gh_id, 'creation':creation}
+#     results = fuseki_process.run_query(qstr, update=True, debug=debug)
+#     return results
 
 # def retire_contact(fuseki_process, contact, debug=False):
 #     """
 #     retire a contact
 #     """
 
-def create_mediator(fuseki_process, label, fformat, debug=False):
-    """
-    create a new mediator
-    """
-    ff = fformat.rstrip('>').split('/')[-1]
-    med = '<http://www.metarelate.net/metOcean/mediates/{}/{}>'.format(ff,
-                                                                       label)
-    qstr = '''
-    INSERT DATA
-    { GRAPH <http://metarelate.net/concepts.ttl> {
-    %s a mr:Mediator ;
-         rdf:label "%s" ;
-         mr:hasFormat <http://www.metarelate.net/metOcean/format/%s> ;
-         mr:saveCache "True" .
-         } }
-    ''' % (med, label, fformat)
-    results = fuseki_process.run_query(qstr, update=True, debug=debug)
-    return results
+# def create_mediator(fuseki_process, label, fformat, debug=False):
+#     """
+#     create a new mediator
+#     """
+#     ff = fformat.rstrip('>').split('/')[-1]
+#     med = '<http://www.metarelate.net/metOcean/mediates/{}/{}>'.format(ff,
+#                                                                        label)
+#     qstr = '''
+#     INSERT DATA
+#     { GRAPH <http://metarelate.net/concepts.ttl> {
+#     %s a mr:Mediator ;
+#          rdf:label "%s" ;
+#          mr:hasFormat <http://www.metarelate.net/metOcean/format/%s> ;
+#          mr:saveCache "True" .
+#          } }
+#     ''' % (med, label, fformat)
+#     results = fuseki_process.run_query(qstr, update=True, debug=debug)
+#     return results
 
 def get_mediators(fuseki_process, fformat='', debug=False):
     """
@@ -262,21 +262,21 @@ def get_mediators(fuseki_process, fformat='', debug=False):
     return results
     
 
-def print_records(res):
-    """ helper for command line query interpretation"""
-    print_string = ''
-    for r in res:
-        if len(r.keys()) == 3 and r.has_key('s') and \
-            r.has_key('p') and r.has_key('o'):
-            print_string += '%s\n' % r['s']
-            print_string += '\t%s\n' % r['p']
-            print_string += '\t\t%s\n' % r['o']
-            print_string += '\n'
-        else:
-            for k,v in r.iteritems():
-                print_string += '%s %s\n' (k, v)
-            print_string += '\n'
-    return print_string
+# def print_records(res):
+#     """ helper for command line query interpretation"""
+#     print_string = ''
+#     for r in res:
+#         if len(r.keys()) == 3 and r.has_key('s') and \
+#             r.has_key('p') and r.has_key('o'):
+#             print_string += '%s\n' % r['s']
+#             print_string += '\t%s\n' % r['p']
+#             print_string += '\t\t%s\n' % r['o']
+#             print_string += '\n'
+#         else:
+#             for k,v in r.iteritems():
+#                 print_string += '%s %s\n' (k, v)
+#             print_string += '\n'
+#     return print_string
 
 def get_all_notation_note(fuseki_process, graph, debug=False):
     """
@@ -647,648 +647,648 @@ def subject_and_plabel(fuseki_process, graph, debug=False):
 #         fCon = results[0]
 #     return fCon
 
-def get_value_map(fuseki_process, po_dict, debug=False):
-    """
-    Return a ValueMap record ID, matching the pred_obj dictionary
-    create one if it does not exist
+# def get_value_map(fuseki_process, po_dict, debug=False):
+#     """
+#     Return a ValueMap record ID, matching the pred_obj dictionary
+#     create one if it does not exist
 
-    """
-    allowed_preds = set(('mr:source','mr:target'))
-    preds = set(po_dict)
-    if not preds == allowed_preds:
-        ec = '''{} is not a subset of the allowed predicates set
-                for a valueMap record
-                {}'''
-        ec = ec.format(preds, allowed_preds)
-        raise ValueError(ec)
-    subj_pref = 'http://www.metarelate.net/metOcean/valueMap'
-    search_string = ''
-    for pred in po_dict:
-        if isinstance(po_dict[pred], list):
-            if len(po_dict[pred]) != 1:
-                ec = 'get_format_concept only accepts 1 mr:format statement }'
-                ec = ec.format(po_dict)
-                raise ValueError(ec)
-            else:
-                for obj in po_dict[pred]:
-                    search_string += '''
-                    %s %s ;''' % (pred, obj)
-        else:
-            search_string += '''
-            %s %s ;''' % (pred, po_dict[pred])
-    if search_string != '':
-        qstr = '''SELECT ?valueMap 
-        WHERE{
-        GRAPH <http://metarelate.net/concepts.ttl> {
-        ?valueMap
-               %s .
-        }
-        }
-        ''' % (search_string)
-        results = fuseki_process.run_query(qstr, debug=debug)
-        if len(results) == 0:
-            sha1 = make_hash(po_dict)
-            instr = '''INSERT DATA {
-            GRAPH <http://metarelate.net/concepts.ttl> {
-            <%s/%s> a mr:ValueMap ;
-                    %s
-                    mr:saveCache "True" .
-            }
-            }
-            ''' % (subj_pref, sha1, search_string)
-            insert_results = fuseki_process.run_query(instr, update=True,
-                                                      debug=debug)
-            results = fuseki_process.run_query(qstr, debug=debug)
-        if len(results) == 1:
-            results = results[0]
-        else:
-            raise ValueError('''multiple results returned from
-            get_calue_map, only one allowed
-            {}'''.format(str(results)))
-    else:
-        results = None
-    return results
+#     """
+#     allowed_preds = set(('mr:source','mr:target'))
+#     preds = set(po_dict)
+#     if not preds == allowed_preds:
+#         ec = '''{} is not a subset of the allowed predicates set
+#                 for a valueMap record
+#                 {}'''
+#         ec = ec.format(preds, allowed_preds)
+#         raise ValueError(ec)
+#     subj_pref = 'http://www.metarelate.net/metOcean/valueMap'
+#     search_string = ''
+#     for pred in po_dict:
+#         if isinstance(po_dict[pred], list):
+#             if len(po_dict[pred]) != 1:
+#                 ec = 'get_format_concept only accepts 1 mr:format statement }'
+#                 ec = ec.format(po_dict)
+#                 raise ValueError(ec)
+#             else:
+#                 for obj in po_dict[pred]:
+#                     search_string += '''
+#                     %s %s ;''' % (pred, obj)
+#         else:
+#             search_string += '''
+#             %s %s ;''' % (pred, po_dict[pred])
+#     if search_string != '':
+#         qstr = '''SELECT ?valueMap 
+#         WHERE{
+#         GRAPH <http://metarelate.net/concepts.ttl> {
+#         ?valueMap
+#                %s .
+#         }
+#         }
+#         ''' % (search_string)
+#         results = fuseki_process.run_query(qstr, debug=debug)
+#         if len(results) == 0:
+#             sha1 = make_hash(po_dict)
+#             instr = '''INSERT DATA {
+#             GRAPH <http://metarelate.net/concepts.ttl> {
+#             <%s/%s> a mr:ValueMap ;
+#                     %s
+#                     mr:saveCache "True" .
+#             }
+#             }
+#             ''' % (subj_pref, sha1, search_string)
+#             insert_results = fuseki_process.run_query(instr, update=True,
+#                                                       debug=debug)
+#             results = fuseki_process.run_query(qstr, debug=debug)
+#         if len(results) == 1:
+#             results = results[0]
+#         else:
+#             raise ValueError('''multiple results returned from
+#             get_calue_map, only one allowed
+#             {}'''.format(str(results)))
+#     else:
+#         results = None
+#     return results
 
-def get_value(fuseki_process, po_dict, debug=False):
-    """
-    Return a value record ID, matching the pred_obj dictionary
-    create one if it does not exist.
+# def get_value(fuseki_process, po_dict, debug=False):
+#     """
+#     Return a value record ID, matching the pred_obj dictionary
+#     create one if it does not exist.
     
-    """
-    allowed_preds = set(('mr:operator','mr:subject', 'mr:object'))
-    preds = set(po_dict)
-    if not preds.issubset(allowed_preds):
-        ec = '''{} is not a subset of the allowed predicates set
-                for a value record
-                {}'''
-        ec = ec.format(preds, allowed_preds)
-        raise ValueError(ec)
-    subj_pref = 'http://www.metarelate.net/metOcean/value'
-    search_string = ''
-    for pred in po_dict:
-        if isinstance(po_dict[pred], list):
-            if len(po_dict[pred]) != 1:
-                ec = 'get_value only accepts 1 mr:format statement }'
-                ec = ec.format(po_dict)
-                raise ValueError(ec)
-            else:
-                for obj in po_dict[pred]:
-                    search_string += '''
-                    %s %s ;''' % (pred, obj)
-        else:
-            search_string += '''
-            %s %s ;''' % (pred, po_dict[pred])
-    if search_string != '':
-        qstr = '''SELECT ?value
-        WHERE{
-        GRAPH <http://metarelate.net/concepts.ttl> {
-        ?value
-               %s .
-        }
-        }
-        ''' % (search_string)
-        results = fuseki_process.run_query(qstr, debug=debug)
-        if len(results) == 0:
-            sha1 = make_hash(po_dict)
-            instr = '''INSERT DATA {
-            GRAPH <http://metarelate.net/concepts.ttl> {
-            <%s/%s> a mr:Value ;
-                    %s
-                    mr:saveCache "True" .
-            }
-            }
-            ''' % (subj_pref, sha1, search_string)
-            insert_results = fuseki_process.run_query(instr, update=True,
-                                                      debug=debug)
-            results = fuseki_process.run_query(qstr, debug=debug)
-        if len(results) == 1:
-            results = results[0]
-        else:
-            raise ValueError('''multiple results returned from
-            get_value, only one allowed
-            {}'''.format(str(results)))
-    else:
-        results = None
-    return results
+#     """
+#     allowed_preds = set(('mr:operator','mr:subject', 'mr:object'))
+#     preds = set(po_dict)
+#     if not preds.issubset(allowed_preds):
+#         ec = '''{} is not a subset of the allowed predicates set
+#                 for a value record
+#                 {}'''
+#         ec = ec.format(preds, allowed_preds)
+#         raise ValueError(ec)
+#     subj_pref = 'http://www.metarelate.net/metOcean/value'
+#     search_string = ''
+#     for pred in po_dict:
+#         if isinstance(po_dict[pred], list):
+#             if len(po_dict[pred]) != 1:
+#                 ec = 'get_value only accepts 1 mr:format statement }'
+#                 ec = ec.format(po_dict)
+#                 raise ValueError(ec)
+#             else:
+#                 for obj in po_dict[pred]:
+#                     search_string += '''
+#                     %s %s ;''' % (pred, obj)
+#         else:
+#             search_string += '''
+#             %s %s ;''' % (pred, po_dict[pred])
+#     if search_string != '':
+#         qstr = '''SELECT ?value
+#         WHERE{
+#         GRAPH <http://metarelate.net/concepts.ttl> {
+#         ?value
+#                %s .
+#         }
+#         }
+#         ''' % (search_string)
+#         results = fuseki_process.run_query(qstr, debug=debug)
+#         if len(results) == 0:
+#             sha1 = make_hash(po_dict)
+#             instr = '''INSERT DATA {
+#             GRAPH <http://metarelate.net/concepts.ttl> {
+#             <%s/%s> a mr:Value ;
+#                     %s
+#                     mr:saveCache "True" .
+#             }
+#             }
+#             ''' % (subj_pref, sha1, search_string)
+#             insert_results = fuseki_process.run_query(instr, update=True,
+#                                                       debug=debug)
+#             results = fuseki_process.run_query(qstr, debug=debug)
+#         if len(results) == 1:
+#             results = results[0]
+#         else:
+#             raise ValueError('''multiple results returned from
+#             get_value, only one allowed
+#             {}'''.format(str(results)))
+#     else:
+#         results = None
+#     return results
 
-def get_scoped_property(fuseki_process, po_dict, debug=False):
-    """
-    Return a scopedProperty record ID, matching the pred_obj dictionary
-    create one if it does not exist.
+# def get_scoped_property(fuseki_process, po_dict, debug=False):
+#     """
+#     Return a scopedProperty record ID, matching the pred_obj dictionary
+#     create one if it does not exist.
     
-    """
-    allowed_preds = set(('mr:scope','mr:hasProperty'))
-    preds = set(po_dict)
-    if not preds == allowed_preds:
-        ec = '''{} is not a subset of the allowed predicates set
-                for a scopedProperty record
-                {}'''
-        ec = ec.format(preds, allowed_preds)
-        raise ValueError(ec)
-    subj_pref = 'http://www.metarelate.net/metOcean/scopedProperty'
-    search_string = ''
-    for pred in po_dict:
-        if isinstance(po_dict[pred], list):
-            if len(po_dict[pred]) != 1:
-                ec = 'get_scopedProperty only accepts 1 mr:format statement {}'
-                ec = ec.format(po_dict)
-                raise ValueError(ec)
-            else:
-                for obj in po_dict[pred]:
-                    search_string += '''
-                    %s %s ;''' % (pred, obj)
-        else:
-            search_string += '''
-            %s %s ;''' % (pred, po_dict[pred])
-    if search_string != '':
-        qstr = '''SELECT ?scopedProperty
-        WHERE{
-        GRAPH <http://metarelate.net/concepts.ttl> {
-        ?scopedProperty
-               %s .
-        }
-        }
-        ''' % (search_string)
-        results = fuseki_process.run_query(qstr, debug=debug)
-        if len(results) == 0:
-            sha1 = make_hash(po_dict)
-            instr = '''INSERT DATA {
-            GRAPH <http://metarelate.net/concepts.ttl> {
-            <%s/%s> a mr:Property ;
-                    %s
-                    mr:saveCache "True" .
-            }
-            }
-            ''' % (subj_pref, sha1, search_string)
-            insert_results = fuseki_process.run_query(instr, update=True,
-                                                      debug=debug)
-            results = fuseki_process.run_query(qstr, debug=debug)
-        if len(results) == 1:
-            results = results[0]
-        else:
-            raise ValueError('multiple results returned from '
-                             'get_scopedProperty, only one '
-                             'allowed {}'.format(results))
-    else:
-        results = None
-    return results
+#     """
+#     allowed_preds = set(('mr:scope','mr:hasProperty'))
+#     preds = set(po_dict)
+#     if not preds == allowed_preds:
+#         ec = '''{} is not a subset of the allowed predicates set
+#                 for a scopedProperty record
+#                 {}'''
+#         ec = ec.format(preds, allowed_preds)
+#         raise ValueError(ec)
+#     subj_pref = 'http://www.metarelate.net/metOcean/scopedProperty'
+#     search_string = ''
+#     for pred in po_dict:
+#         if isinstance(po_dict[pred], list):
+#             if len(po_dict[pred]) != 1:
+#                 ec = 'get_scopedProperty only accepts 1 mr:format statement {}'
+#                 ec = ec.format(po_dict)
+#                 raise ValueError(ec)
+#             else:
+#                 for obj in po_dict[pred]:
+#                     search_string += '''
+#                     %s %s ;''' % (pred, obj)
+#         else:
+#             search_string += '''
+#             %s %s ;''' % (pred, po_dict[pred])
+#     if search_string != '':
+#         qstr = '''SELECT ?scopedProperty
+#         WHERE{
+#         GRAPH <http://metarelate.net/concepts.ttl> {
+#         ?scopedProperty
+#                %s .
+#         }
+#         }
+#         ''' % (search_string)
+#         results = fuseki_process.run_query(qstr, debug=debug)
+#         if len(results) == 0:
+#             sha1 = make_hash(po_dict)
+#             instr = '''INSERT DATA {
+#             GRAPH <http://metarelate.net/concepts.ttl> {
+#             <%s/%s> a mr:Property ;
+#                     %s
+#                     mr:saveCache "True" .
+#             }
+#             }
+#             ''' % (subj_pref, sha1, search_string)
+#             insert_results = fuseki_process.run_query(instr, update=True,
+#                                                       debug=debug)
+#             results = fuseki_process.run_query(qstr, debug=debug)
+#         if len(results) == 1:
+#             results = results[0]
+#         else:
+#             raise ValueError('multiple results returned from '
+#                              'get_scopedProperty, only one '
+#                              'allowed {}'.format(results))
+#     else:
+#         results = None
+#     return results
 
 
-def retrieve_valuemap(fuseki_process, vmId, debug=False):
-    """
-    return a valueMap record from the provided id
-    or None if one does not exist
+# def retrieve_valuemap(fuseki_process, vmId, debug=False):
+#     """
+#     return a valueMap record from the provided id
+#     or None if one does not exist
     
-    """
-    qstr = '''SELECT ?valueMap ?source ?target
-    WHERE {
-    GRAPH <http://metarelate.net/concepts.ttl> {
-        ?valueMap mr:source ?source ;
-                  mr:target ?target .
-        FILTER(?valueMap = %s)
-        }
-    }
-    ''' % vmId
-    results = fuseki_process.run_query(qstr, debug=debug)
-    if len(results) == 0:
-        valuemap = None
-    elif len(results) >1:
-        raise ValueError('{} is a malformed valueMap'.format(results))
-    else:
-        valuemap = results[0]
-    return valuemap
+#     """
+#     qstr = '''SELECT ?valueMap ?source ?target
+#     WHERE {
+#     GRAPH <http://metarelate.net/concepts.ttl> {
+#         ?valueMap mr:source ?source ;
+#                   mr:target ?target .
+#         FILTER(?valueMap = %s)
+#         }
+#     }
+#     ''' % vmId
+#     results = fuseki_process.run_query(qstr, debug=debug)
+#     if len(results) == 0:
+#         valuemap = None
+#     elif len(results) >1:
+#         raise ValueError('{} is a malformed valueMap'.format(results))
+#     else:
+#         valuemap = results[0]
+#     return valuemap
 
 
-def retrieve_value(fuseki_process, vId, debug=False):
-    """
-    return a value record from the provided id
-    or None if one does not exist
+# def retrieve_value(fuseki_process, vId, debug=False):
+#     """
+#     return a value record from the provided id
+#     or None if one does not exist
     
-    """
-    qstr = '''SELECT ?value ?operator ?subject ?object
-    WHERE {
-    GRAPH <http://metarelate.net/concepts.ttl> {
-        ?value mr:subject ?subject .
-        OPTIONAL {?value mr:operator ?operator .}
-        OPTIONAL {?value mr:object ?object . }
-        FILTER(?value = %s)
-        }
-    }
-    ''' % vId
-    results = fuseki_process.run_query(qstr, debug=debug)
-    if len(results) == 0:
-        result = None
-    elif len(results) >1:
-        raise ValueError('{} is a malformed value'.format(results))
-    else:
-        result = results[0]
-    return result
+#     """
+#     qstr = '''SELECT ?value ?operator ?subject ?object
+#     WHERE {
+#     GRAPH <http://metarelate.net/concepts.ttl> {
+#         ?value mr:subject ?subject .
+#         OPTIONAL {?value mr:operator ?operator .}
+#         OPTIONAL {?value mr:object ?object . }
+#         FILTER(?value = %s)
+#         }
+#     }
+#     ''' % vId
+#     results = fuseki_process.run_query(qstr, debug=debug)
+#     if len(results) == 0:
+#         result = None
+#     elif len(results) >1:
+#         raise ValueError('{} is a malformed value'.format(results))
+#     else:
+#         result = results[0]
+#     return result
 
 
-def retrieve_scoped_property(fuseki_process, spId, debug=False):
-    """
-    return a value record from the provided id
-    or None if one does not exist
+# def retrieve_scoped_property(fuseki_process, spId, debug=False):
+#     """
+#     return a value record from the provided id
+#     or None if one does not exist
     
-    """
-    qstr = '''SELECT ?scopedProperty ?scope ?hasProperty
-    WHERE {
-    GRAPH <http://metarelate.net/concepts.ttl> {
-        ?scopedProperty mr:scope ?scope ;
-                  mr:hasProperty ?hasProperty .
-        FILTER(?scopedProperty = %s)
-        }
-    }
-    ''' % spId
-    results = fuseki_process.run_query(qstr, debug=debug)
-    if len(results) == 0:
-        result = None
-    elif len(results) >1:
-        raise ValueError('{} is a malformed value'.format(results))
-    else:
-        result = results[0]
-    return result
+#     """
+#     qstr = '''SELECT ?scopedProperty ?scope ?hasProperty
+#     WHERE {
+#     GRAPH <http://metarelate.net/concepts.ttl> {
+#         ?scopedProperty mr:scope ?scope ;
+#                   mr:hasProperty ?hasProperty .
+#         FILTER(?scopedProperty = %s)
+#         }
+#     }
+#     ''' % spId
+#     results = fuseki_process.run_query(qstr, debug=debug)
+#     if len(results) == 0:
+#         result = None
+#     elif len(results) >1:
+#         raise ValueError('{} is a malformed value'.format(results))
+#     else:
+#         result = results[0]
+#     return result
 
 
-def create_mapping(fuseki_process, po_dict, debug=False):
-    """
-    create a new mapping record using the po_dict
-    defining the mapping record
+# def create_mapping(fuseki_process, po_dict, debug=False):
+#     """
+#     create a new mapping record using the po_dict
+#     defining the mapping record
     
-    """
-    subj_pref = 'http://www.metarelate.net/metOcean/mapping'
-    allowed_preds = set(('mr:source', 'mr:target', 'mr:invertible',
-                            'dc:replaces', 'mr:hasValueMap', 'mr:status',
-                            'skos:note', 'mr:reason', 'dc:date', 'dc:creator',
-                            'mr:owner', 'mr:watcher'))
-    preds = set(po_dict)
-    if not preds.issubset(allowed_preds):
-        ec = '''{}
-        is not a subset of the allowed predicates set for a mapping record
-        {}'''
-        ec = ec.format(preds, allowed_preds)
-        raise ValueError(ec)
-    mandated_preds = set(('mr:source', 'mr:target', 'mr:invertible', 
-                            'mr:status',  'mr:reason',
-                            'dc:date', 'dc:creator'))
-    if not preds.issuperset(mandated_preds):
-        ec = '''{}
-        is not a superset of the mandated predicates set for a mapping record
-        {}'''
-        ec = ec.format(preds, mandated_preds)
-        raise ValueError(ec)
-    singular_preds = set(('mr:source', 'mr:target', 'mr:invertible',
-                             'dc:replaces', 'mr:status', 'skos:note',
-                             'mr:reason', 'dc:date', 'dc:creator'))
-    search_string = ''
-    for pred in po_dict:
-        if isinstance(po_dict[pred], list):
-            if pred in singular_preds and len(po_dict[pred]) != 1:
-                ec = 'create_mapping limits {} to one statement per record '
-                ec = ec.format(pred)
-                raise ValueError(ec)
-            else:
-                for obj in po_dict[pred]:
-                    search_string += '''
-                    %s %s ;''' % (pred, obj)
-        else:
-            search_string += '''
-            %s %s ;''' % (pred, po_dict[pred])
-    sha1 = make_hash(po_dict, ['''dc:date'''])
-    mapping = '%s/%s' % (subj_pref, sha1)
-    qstr = '''SELECT ?mapping
-    WHERE {
-    GRAPH <http://metarelate.net/mappings.ttl> {
-    ?mapping rdf:type mr:Mapping .
-    FILTER(?mapping = <%s>)
-    } }''' % mapping
-    results = fuseki_process.run_query(qstr, debug=debug)
-    if results == []:
-        #create the mapping
-        instr = '''INSERT DATA {
-        GRAPH <http://metarelate.net/mappings.ttl> {
-        <%s> a mr:Mapping ;
-                    %s
-                    mr:saveCache "True" .
-        }
-        }
-        ''' % (mapping, search_string)
-        insert_results = fuseki_process.run_query(instr, update=True,
-                                                  debug=debug)
-    return [{'map':'<{}>'.format(mapping)}]
+#     """
+#     subj_pref = 'http://www.metarelate.net/metOcean/mapping'
+#     allowed_preds = set(('mr:source', 'mr:target', 'mr:invertible',
+#                             'dc:replaces', 'mr:hasValueMap', 'mr:status',
+#                             'skos:note', 'mr:reason', 'dc:date', 'dc:creator',
+#                             'mr:owner', 'mr:watcher'))
+#     preds = set(po_dict)
+#     if not preds.issubset(allowed_preds):
+#         ec = '''{}
+#         is not a subset of the allowed predicates set for a mapping record
+#         {}'''
+#         ec = ec.format(preds, allowed_preds)
+#         raise ValueError(ec)
+#     mandated_preds = set(('mr:source', 'mr:target', 'mr:invertible', 
+#                             'mr:status',  'mr:reason',
+#                             'dc:date', 'dc:creator'))
+#     if not preds.issuperset(mandated_preds):
+#         ec = '''{}
+#         is not a superset of the mandated predicates set for a mapping record
+#         {}'''
+#         ec = ec.format(preds, mandated_preds)
+#         raise ValueError(ec)
+#     singular_preds = set(('mr:source', 'mr:target', 'mr:invertible',
+#                              'dc:replaces', 'mr:status', 'skos:note',
+#                              'mr:reason', 'dc:date', 'dc:creator'))
+#     search_string = ''
+#     for pred in po_dict:
+#         if isinstance(po_dict[pred], list):
+#             if pred in singular_preds and len(po_dict[pred]) != 1:
+#                 ec = 'create_mapping limits {} to one statement per record '
+#                 ec = ec.format(pred)
+#                 raise ValueError(ec)
+#             else:
+#                 for obj in po_dict[pred]:
+#                     search_string += '''
+#                     %s %s ;''' % (pred, obj)
+#         else:
+#             search_string += '''
+#             %s %s ;''' % (pred, po_dict[pred])
+#     sha1 = make_hash(po_dict, ['''dc:date'''])
+#     mapping = '%s/%s' % (subj_pref, sha1)
+#     qstr = '''SELECT ?mapping
+#     WHERE {
+#     GRAPH <http://metarelate.net/mappings.ttl> {
+#     ?mapping rdf:type mr:Mapping .
+#     FILTER(?mapping = <%s>)
+#     } }''' % mapping
+#     results = fuseki_process.run_query(qstr, debug=debug)
+#     if results == []:
+#         #create the mapping
+#         instr = '''INSERT DATA {
+#         GRAPH <http://metarelate.net/mappings.ttl> {
+#         <%s> a mr:Mapping ;
+#                     %s
+#                     mr:saveCache "True" .
+#         }
+#         }
+#         ''' % (mapping, search_string)
+#         insert_results = fuseki_process.run_query(instr, update=True,
+#                                                   debug=debug)
+#     return [{'map':'<{}>'.format(mapping)}]
 
 
-def get_mapping_by_id(fuseki_process, map_id, val=True, rep=True, debug=False):
-    """
-    return a mapping record if one exists,
-    from the provided map_id
+# def get_mapping_by_id(fuseki_process, map_id, val=True, rep=True, debug=False):
+#     """
+#     return a mapping record if one exists,
+#     from the provided map_id
     
-    """
-    vstr = ''
-    if val:
-        vstr += '\tFILTER (?status NOT IN ("Deprecated", "Broken"))'
-    if rep:
-        vstr += '\n\tMINUS {?mapping ^dc:replaces+ ?anothermap}'
-    qstr = '''SELECT ?mapping ?source ?target ?invertible ?replaces ?status
-                     ?note ?reason ?date ?creator ?inverted
-    (GROUP_CONCAT(DISTINCT(?owner); SEPARATOR = '&') AS ?owners)
-    (GROUP_CONCAT(DISTINCT(?watcher); SEPARATOR = '&') AS ?watchers)
-    (GROUP_CONCAT(DISTINCT(?valueMap); SEPARATOR = '&') AS ?valueMaps)
-    WHERE {
-    GRAPH <http://metarelate.net/mappings.ttl> {
-    ?mapping mr:source ?source ;
-         mr:target ?target ;
-         mr:invertible ?invertible ;
-         mr:status ?status ;
-         mr:reason ?reason ;
-         dc:date ?date ;
-         dc:creator ?creator .
-    BIND("False" AS ?inverted)
-    OPTIONAL {?mapping dc:replaces ?replaces .}
-    OPTIONAL {?mapping skos:note ?note .}
-    OPTIONAL {?mapping mr:hasValueMap ?valueMap .}
-    OPTIONAL {?mapping mr:owner ?owner .}
-    OPTIONAL {?mapping mr:watcher ?watcher .}
-    FILTER(?mapping = %s)
-    %s
-    }
-    }
-    GROUP BY ?mapping ?source ?target ?invertible ?replaces
-             ?status ?note ?reason ?date ?creator ?inverted
-    ''' % (map_id, vstr)
-    result = fuseki_process.run_query(qstr, debug=debug)
-    if result == []:
-        result = None
-    elif len(result) == 1:
-        result = result[0]
-    else:
-        raise ValueError('%s is not a valid mapping, it has multiple returns:'
-                         '\n %s ' % (map_id, result))
-    return result
+#     """
+#     vstr = ''
+#     if val:
+#         vstr += '\tFILTER (?status NOT IN ("Deprecated", "Broken"))'
+#     if rep:
+#         vstr += '\n\tMINUS {?mapping ^dc:replaces+ ?anothermap}'
+#     qstr = '''SELECT ?mapping ?source ?target ?invertible ?replaces ?status
+#                      ?note ?reason ?date ?creator ?inverted
+#     (GROUP_CONCAT(DISTINCT(?owner); SEPARATOR = '&') AS ?owners)
+#     (GROUP_CONCAT(DISTINCT(?watcher); SEPARATOR = '&') AS ?watchers)
+#     (GROUP_CONCAT(DISTINCT(?valueMap); SEPARATOR = '&') AS ?valueMaps)
+#     WHERE {
+#     GRAPH <http://metarelate.net/mappings.ttl> {
+#     ?mapping mr:source ?source ;
+#          mr:target ?target ;
+#          mr:invertible ?invertible ;
+#          mr:status ?status ;
+#          mr:reason ?reason ;
+#          dc:date ?date ;
+#          dc:creator ?creator .
+#     BIND("False" AS ?inverted)
+#     OPTIONAL {?mapping dc:replaces ?replaces .}
+#     OPTIONAL {?mapping skos:note ?note .}
+#     OPTIONAL {?mapping mr:hasValueMap ?valueMap .}
+#     OPTIONAL {?mapping mr:owner ?owner .}
+#     OPTIONAL {?mapping mr:watcher ?watcher .}
+#     FILTER(?mapping = %s)
+#     %s
+#     }
+#     }
+#     GROUP BY ?mapping ?source ?target ?invertible ?replaces
+#              ?status ?note ?reason ?date ?creator ?inverted
+#     ''' % (map_id, vstr)
+#     result = fuseki_process.run_query(qstr, debug=debug)
+#     if result == []:
+#         result = None
+#     elif len(result) == 1:
+#         result = result[0]
+#     else:
+#         raise ValueError('%s is not a valid mapping, it has multiple returns:'
+#                          '\n %s ' % (map_id, result))
+#     return result
 
 ###validation rules
 
-def multiple_mappings(fuseki_process, test_source=None, debug=False):
-    """
-    returns all the mappings which map the same source to a different target
-    where the targets are the same format
-    filter to a single test mapping with test_map
+# def multiple_mappings(fuseki_process, test_source=None, debug=False):
+#     """
+#     returns all the mappings which map the same source to a different target
+#     where the targets are the same format
+#     filter to a single test mapping with test_map
     
-    """
-    tm_filter = ''
-    if test_source:
-        pattern = '<http.*>'
-        pattern = re.compile(pattern)
-        if pattern.match(test_source):
-            tm_filter = '\n\tFILTER(?asource = {})'.format(test_source)
-    qstr = '''SELECT ?amap ?asource ?atarget ?bmap ?bsource ?btarget
-    (GROUP_CONCAT(DISTINCT(?value); SEPARATOR='&') AS ?signature)
-    WHERE {
-    GRAPH <http://metarelate.net/mappings.ttl> { {
-    ?amap mr:status ?astatus ;
-         mr:source ?asource ;
-         mr:target ?atarget . } 
-    UNION 
-        { 
-    ?amap mr:invertible "True" ;
-         mr:status ?astatus ;
-         mr:target ?asource ;
-         mr:source ?atarget . } 
-    FILTER (?astatus NOT IN ("Deprecated", "Broken"))
-    MINUS {?amap ^dc:replaces+ ?anothermap} %s
-    } 
-    GRAPH <http://metarelate.net/mappings.ttl> { {
-    ?bmap mr:status ?bstatus ;
-         mr:source ?bsource ;
-         mr:target ?btarget . } 
-    UNION  
-        { 
-    ?bmap mr:invertible "True" ;
-         mr:status ?bstatus ;
-         mr:target ?bsource ;
-         mr:source ?btarget . } 
-    FILTER (?bstatus NOT IN ("Deprecated", "Broken"))
-    MINUS {?bmap ^dc:replaces+ ?bnothermap}
-    filter (?bmap != ?amap)
-    filter (?bsource = ?asource)
-    filter (?btarget != ?atarget)
-    } 
-    GRAPH <http://metarelate.net/concepts.ttl> {
-    ?asource mr:hasFormat ?asourceformat .
-    ?bsource mr:hasFormat ?bsourceformat .
-    ?atarget mr:hasFormat ?atargetformat .
-    ?btarget mr:hasFormat ?btargetformat .
-    }
-    filter (?btargetformat = ?atargetformat)
-    GRAPH <http://metarelate.net/concepts.ttl> { {
-    ?asource mr:hasProperty ?prop . }
-    UNION {
-    ?atarget mr:hasProperty ?prop . }
-    UNION {
-    ?asource mr:hasComponent|mr:hasProperty ?prop . }
-    UNION {
-    ?atarget mr:hasComponent|mr:hasProperty ?prop . }
-    UNION { 
-    ?asource mr:hasProperty|mr:hasComponent|mr:hasProperty ?prop . }
-    UNION { 
-    ?atarget mr:hasProperty|mr:hasComponent|mr:hasProperty ?prop . }
-    OPTIONAL { ?prop rdf:value ?value . }
-    } }
-    GROUP BY ?amap ?asource ?atarget ?bmap ?bsource ?btarget
-    ORDER BY ?asource
-    ''' % tm_filter
-    results = fuseki_process.run_query(qstr, debug=debug)
-    return results
+#     """
+#     tm_filter = ''
+#     if test_source:
+#         pattern = '<http.*>'
+#         pattern = re.compile(pattern)
+#         if pattern.match(test_source):
+#             tm_filter = '\n\tFILTER(?asource = {})'.format(test_source)
+#     qstr = '''SELECT ?amap ?asource ?atarget ?bmap ?bsource ?btarget
+#     (GROUP_CONCAT(DISTINCT(?value); SEPARATOR='&') AS ?signature)
+#     WHERE {
+#     GRAPH <http://metarelate.net/mappings.ttl> { {
+#     ?amap mr:status ?astatus ;
+#          mr:source ?asource ;
+#          mr:target ?atarget . } 
+#     UNION 
+#         { 
+#     ?amap mr:invertible "True" ;
+#          mr:status ?astatus ;
+#          mr:target ?asource ;
+#          mr:source ?atarget . } 
+#     FILTER (?astatus NOT IN ("Deprecated", "Broken"))
+#     MINUS {?amap ^dc:replaces+ ?anothermap} %s
+#     } 
+#     GRAPH <http://metarelate.net/mappings.ttl> { {
+#     ?bmap mr:status ?bstatus ;
+#          mr:source ?bsource ;
+#          mr:target ?btarget . } 
+#     UNION  
+#         { 
+#     ?bmap mr:invertible "True" ;
+#          mr:status ?bstatus ;
+#          mr:target ?bsource ;
+#          mr:source ?btarget . } 
+#     FILTER (?bstatus NOT IN ("Deprecated", "Broken"))
+#     MINUS {?bmap ^dc:replaces+ ?bnothermap}
+#     filter (?bmap != ?amap)
+#     filter (?bsource = ?asource)
+#     filter (?btarget != ?atarget)
+#     } 
+#     GRAPH <http://metarelate.net/concepts.ttl> {
+#     ?asource mr:hasFormat ?asourceformat .
+#     ?bsource mr:hasFormat ?bsourceformat .
+#     ?atarget mr:hasFormat ?atargetformat .
+#     ?btarget mr:hasFormat ?btargetformat .
+#     }
+#     filter (?btargetformat = ?atargetformat)
+#     GRAPH <http://metarelate.net/concepts.ttl> { {
+#     ?asource mr:hasProperty ?prop . }
+#     UNION {
+#     ?atarget mr:hasProperty ?prop . }
+#     UNION {
+#     ?asource mr:hasComponent|mr:hasProperty ?prop . }
+#     UNION {
+#     ?atarget mr:hasComponent|mr:hasProperty ?prop . }
+#     UNION { 
+#     ?asource mr:hasProperty|mr:hasComponent|mr:hasProperty ?prop . }
+#     UNION { 
+#     ?atarget mr:hasProperty|mr:hasComponent|mr:hasProperty ?prop . }
+#     OPTIONAL { ?prop rdf:value ?value . }
+#     } }
+#     GROUP BY ?amap ?asource ?atarget ?bmap ?bsource ?btarget
+#     ORDER BY ?asource
+#     ''' % tm_filter
+#     results = fuseki_process.run_query(qstr, debug=debug)
+#     return results
 
-def valid_vocab(fuseki_process, debug=False):
-    """
-    find all valid mapping and every property they reference
+# def valid_vocab(fuseki_process, debug=False):
+#     """
+#     find all valid mapping and every property they reference
 
-    """
-    qstr = '''
-    SELECT DISTINCT  ?amap 
-    (GROUP_CONCAT(DISTINCT(?vocab); SEPARATOR = '&') AS ?signature)
-    WHERE {      
-    GRAPH <http://metarelate.net/mappings.ttl> { {  
-    ?amap mr:status ?astatus ; 
-    FILTER (?astatus NOT IN ("Deprecated", "Broken")) 
-    MINUS {?amap ^dc:replaces+ ?anothermap}      }
-    { 
-    ?amap mr:source ?fc .      }
-    UNION {
-    ?amap mr:target ?fc .      } } 
-    GRAPH <http://metarelate.net/concepts.ttl> { {
-    ?fc mr:hasProperty ?prop . }
-    UNION {
-    ?fc mr:hasComponent|mr:hasProperty ?prop . }
-    UNION { 
-    ?fc mr:hasProperty|mr:hasComponent|mr:hasProperty ?prop .
-    }
-    { ?prop mr:name ?vocab . }
-    UNION {
-    ?prop mr:operator ?vocab . }
-    UNION {
-    ?prop rdf:value ?vocab . }
-    FILTER(ISURI(?vocab))  }
-    OPTIONAL {GRAPH ?g{?vocab ?p ?o .} }
-    FILTER(!BOUND(?g))      }
-    GROUP BY ?amap
-    '''
-    results = fuseki_process.run_query(qstr, debug=debug)
-    return results
+#     """
+#     qstr = '''
+#     SELECT DISTINCT  ?amap 
+#     (GROUP_CONCAT(DISTINCT(?vocab); SEPARATOR = '&') AS ?signature)
+#     WHERE {      
+#     GRAPH <http://metarelate.net/mappings.ttl> { {  
+#     ?amap mr:status ?astatus ; 
+#     FILTER (?astatus NOT IN ("Deprecated", "Broken")) 
+#     MINUS {?amap ^dc:replaces+ ?anothermap}      }
+#     { 
+#     ?amap mr:source ?fc .      }
+#     UNION {
+#     ?amap mr:target ?fc .      } } 
+#     GRAPH <http://metarelate.net/concepts.ttl> { {
+#     ?fc mr:hasProperty ?prop . }
+#     UNION {
+#     ?fc mr:hasComponent|mr:hasProperty ?prop . }
+#     UNION { 
+#     ?fc mr:hasProperty|mr:hasComponent|mr:hasProperty ?prop .
+#     }
+#     { ?prop mr:name ?vocab . }
+#     UNION {
+#     ?prop mr:operator ?vocab . }
+#     UNION {
+#     ?prop rdf:value ?vocab . }
+#     FILTER(ISURI(?vocab))  }
+#     OPTIONAL {GRAPH ?g{?vocab ?p ?o .} }
+#     FILTER(!BOUND(?g))      }
+#     GROUP BY ?amap
+#     '''
+#     results = fuseki_process.run_query(qstr, debug=debug)
+#     return results
 
 #### search queries ###
 
-def mapping_by_properties(fuseki_process, prop_list, debug=False):
-    """
-    Return the mapping id's which contain all of the proerties
-    in the list of property dictionaries
+# def mapping_by_properties(fuseki_process, prop_list, debug=False):
+#     """
+#     Return the mapping id's which contain all of the proerties
+#     in the list of property dictionaries
     
-    """
-    mapping = None
-    for prop_dict in prop_list:
-        fstr = ''
-        name = prop_dict.get('mr:name')
-        op = prop_dict.get('mr:operator')
-        value = prop_dict.get('rdf:value')
-        if name:
-            fstr += '\tFILTER(?name = {})\n'.format(name)
-        if op:
-            fstr += '\tFILTER(?operator = {})\n'.format(op)
-        if value:
-            fstr += '\tFILTER(?value = {})\n'.format(value)
+#     """
+#     mapping = None
+#     for prop_dict in prop_list:
+#         fstr = ''
+#         name = prop_dict.get('mr:name')
+#         op = prop_dict.get('mr:operator')
+#         value = prop_dict.get('rdf:value')
+#         if name:
+#             fstr += '\tFILTER(?name = {})\n'.format(name)
+#         if op:
+#             fstr += '\tFILTER(?operator = {})\n'.format(op)
+#         if value:
+#             fstr += '\tFILTER(?value = {})\n'.format(value)
             
-        qstr = '''SELECT DISTINCT ?mapping 
-        WHERE {
-        GRAPH <http://metarelate.net/mappings.ttl> {    
-        ?mapping rdf:type mr:Mapping ;
-                 mr:source ?source ;
-                 mr:target ?target ;
-                 mr:status ?status ;
+#         qstr = '''SELECT DISTINCT ?mapping 
+#         WHERE {
+#         GRAPH <http://metarelate.net/mappings.ttl> {    
+#         ?mapping rdf:type mr:Mapping ;
+#                  mr:source ?source ;
+#                  mr:target ?target ;
+#                  mr:status ?status ;
 
-        FILTER (?status NOT IN ("Deprecated", "Broken"))
-        MINUS {?mapping ^dc:replaces+ ?anothermap}
-        }
-        GRAPH <http://metarelate.net/concepts.ttl> { {
-        ?source mr:hasProperty ?property
-        }
-        UNION {
-        ?target mr:hasProperty ?property
-        }
-        UNION {
-        ?source mr:hasComponent/mr:hasProperty ?property
-        }
-        UNION {
-        ?target mr:hasComponent/mr:hasProperty ?property
-        }
-        UNION {
-        ?source mr:hasProperty/mr:hasComponent/mr:hasProperty ?property
-        }
-        UNION {
-        ?target mr:hasProperty/mr:hasComponent/mr:hasProperty ?property
-        }
-        ?property mr:name ?name .
-        OPTIONAL{?property rdf:value ?value . }
-        OPTIONAL{?property mr:operator ?operator . }
-        %s
-        }
-        }
-        ''' % fstr
-        results = fuseki_process.run_query(qstr, debug=debug)
-        #print results
-        maps = set([r['mapping'] for r in results])
-        if not mapping:
-            mappings = maps
-        else:
-            mappings.intersection_update(maps)
-    #print mappings
-    return mappings
+#         FILTER (?status NOT IN ("Deprecated", "Broken"))
+#         MINUS {?mapping ^dc:replaces+ ?anothermap}
+#         }
+#         GRAPH <http://metarelate.net/concepts.ttl> { {
+#         ?source mr:hasProperty ?property
+#         }
+#         UNION {
+#         ?target mr:hasProperty ?property
+#         }
+#         UNION {
+#         ?source mr:hasComponent/mr:hasProperty ?property
+#         }
+#         UNION {
+#         ?target mr:hasComponent/mr:hasProperty ?property
+#         }
+#         UNION {
+#         ?source mr:hasProperty/mr:hasComponent/mr:hasProperty ?property
+#         }
+#         UNION {
+#         ?target mr:hasProperty/mr:hasComponent/mr:hasProperty ?property
+#         }
+#         ?property mr:name ?name .
+#         OPTIONAL{?property rdf:value ?value . }
+#         OPTIONAL{?property mr:operator ?operator . }
+#         %s
+#         }
+#         }
+#         ''' % fstr
+#         results = fuseki_process.run_query(qstr, debug=debug)
+#         #print results
+#         maps = set([r['mapping'] for r in results])
+#         if not mapping:
+#             mappings = maps
+#         else:
+#             mappings.intersection_update(maps)
+#     #print mappings
+#     return mappings
 
 
 ##### legacy ###
 ######  not functional, not for review #######
 ######  to end ###########
-def current_mappings(fuseki_process, debug=False):
-    """
-    return all triples currently valid in the mappings graph
+# def current_mappings(fuseki_process, debug=False):
+#     """
+#     return all triples currently valid in the mappings graph
     
-    """
-    qstr = '''
-    SELECT ?s ?p ?o
-    WHERE
-    { GRAPH <http://metarelate.net/mappings.ttl> {
-    ?s ?p ?o ;
-        mr:status ?status.
-        FILTER (?status NOT IN ("Deprecated", "Broken")) .
-        {
-          SELECT ?map ?replaces
-          WHERE
-          {
-           ?map dc:replaces ?replaces .
+#     """
+#     qstr = '''
+#     SELECT ?s ?p ?o
+#     WHERE
+#     { GRAPH <http://metarelate.net/mappings.ttl> {
+#     ?s ?p ?o ;
+#         mr:status ?status.
+#         FILTER (?status NOT IN ("Deprecated", "Broken")) .
+#         {
+#           SELECT ?map ?replaces
+#           WHERE
+#           {
+#            ?map dc:replaces ?replaces .
 
-           MINUS {?map ^dc:replaces+ ?map}
-           }
-        }
-}
-    '''
-    results = fuseki_process.run_query(qstr, update=True, debug=debug)
-    return results
+#            MINUS {?map ^dc:replaces+ ?map}
+#            }
+#         }
+# }
+#     '''
+#     results = fuseki_process.run_query(qstr, update=True, debug=debug)
+#     return results
 
 
 
-def select_graph(fuseki_process, graph, debug=False):
-    """
-    selects a particular graph from the TDB
+# def select_graph(fuseki_process, graph, debug=False):
+#     """
+#     selects a particular graph from the TDB
     
-    """
-    qstr = '''
-        SELECT DISTINCT ?g
-        WHERE {
-            GRAPH ?g { ?s ?p ?o } .
-            FILTER( REGEX(str(?g), '%s') ) .
-        }
+#     """
+#     qstr = '''
+#         SELECT DISTINCT ?g
+#         WHERE {
+#             GRAPH ?g { ?s ?p ?o } .
+#             FILTER( REGEX(str(?g), '%s') ) .
+#         }
 
-    ''' % graph
-    results = fuseki_process.run_query(qstr, debug=debug)
-    return results
-
-
+#     ''' % graph
+#     results = fuseki_process.run_query(qstr, debug=debug)
+#     return results
 
 
-def subject_by_graph(fuseki_process, graph, debug=False):
-    """
-    selects distinct subject from a particular graph
+
+
+# def subject_by_graph(fuseki_process, graph, debug=False):
+#     """
+#     selects distinct subject from a particular graph
     
-    """
-    qstr = '''
-        SELECT DISTINCT ?subject 
-        WHERE {
-            GRAPH <%s> { ?subject ?p ?o } .
-        }
-        ORDER BY ?subject
+#     """
+#     qstr = '''
+#         SELECT DISTINCT ?subject 
+#         WHERE {
+#             GRAPH <%s> { ?subject ?p ?o } .
+#         }
+#         ORDER BY ?subject
 
-    ''' % graph
+#     ''' % graph
     
-    results = fuseki_process.run_query(qstr, debug=debug)
-    return results
+#     results = fuseki_process.run_query(qstr, debug=debug)
+#     return results
 
-def subject_graph_pattern(fuseki_process, graph,pattern,debug=False):
-    """
-    selects distinct subject from a particular graph matching a pattern
+# def subject_graph_pattern(fuseki_process, graph,pattern,debug=False):
+#     """
+#     selects distinct subject from a particular graph matching a pattern
     
-    """
-    qstr = '''
-        SELECT DISTINCT ?subject
-        WHERE {
-            GRAPH <http://%s> { ?subject ?p ?o } .
-            FILTER( REGEX(str(?subject), '%s') ) .            
-        }
-        ORDER BY ?subject
+#     """
+#     qstr = '''
+#         SELECT DISTINCT ?subject
+#         WHERE {
+#             GRAPH <http://%s> { ?subject ?p ?o } .
+#             FILTER( REGEX(str(?subject), '%s') ) .            
+#         }
+#         ORDER BY ?subject
 
-    ''' % (graph,pattern)
+#     ''' % (graph,pattern)
 
-    results = fuseki_process.run_query(qstr, debug=debug)
-    return results
+#     results = fuseki_process.run_query(qstr, debug=debug)
+#     return results
 
 #### potentially refactorable for more comprehensive search
 ###### currently not functional
@@ -1452,46 +1452,46 @@ def subject_graph_pattern(fuseki_process, graph,pattern,debug=False):
 #         results = []
 #     return results
 
-def mappings_by_ordered_concept(fuseki_process, source_list, target_list, debug=False):
-    """
-    return mapping records matching elements in the concepts list as sources or targets
-    """
-    sources = ','.join(source_list)
-    targets = ','.join(target_list)
-    qstr = ''' SELECT ?map ?source ?target
-    WHERE
-    {GRAPH <http://metarelate.net/mappings.ttl> {
-    {?map mr:source ?source ;
-         mr:target ?target .
-       filter(?source in (%s))
-       filter(?target in (%s))}
-        }
-    }
-    ''' % (sources, targets)
-    results = fuseki_process.run_query(qstr, debug=debug)
-    return results
+# def mappings_by_ordered_concept(fuseki_process, source_list, target_list, debug=False):
+#     """
+#     return mapping records matching elements in the concepts list as sources or targets
+#     """
+#     sources = ','.join(source_list)
+#     targets = ','.join(target_list)
+#     qstr = ''' SELECT ?map ?source ?target
+#     WHERE
+#     {GRAPH <http://metarelate.net/mappings.ttl> {
+#     {?map mr:source ?source ;
+#          mr:target ?target .
+#        filter(?source in (%s))
+#        filter(?target in (%s))}
+#         }
+#     }
+#     ''' % (sources, targets)
+#     results = fuseki_process.run_query(qstr, debug=debug)
+#     return results
 
 
-def mappings_by_concept(fuseki_process, concepts, debug=False):
-    """
-    return mapping records matching elements in the concepts list as sources or targets
-    """
-    sources = ','.join(concepts)
-    targets = ','.join(concepts)
-    qstr = ''' SELECT ?map ?source ?target
-    WHERE
-    {GRAPH <http://metarelate.net/mappings.ttl> {
-    {?map mr:source ?source ;
-         mr:target ?target .
-       filter(?source in (%s))}
-         UNION
-         {?map mr:source ?source ;
-         mr:target ?target .
-       filter(?target in (%s))}
-        }
-    }
-    ''' % (sources, targets)
-    results = fuseki_process.run_query(qstr, debug=debug)
-    return results
+# def mappings_by_concept(fuseki_process, concepts, debug=False):
+#     """
+#     return mapping records matching elements in the concepts list as sources or targets
+#     """
+#     sources = ','.join(concepts)
+#     targets = ','.join(concepts)
+#     qstr = ''' SELECT ?map ?source ?target
+#     WHERE
+#     {GRAPH <http://metarelate.net/mappings.ttl> {
+#     {?map mr:source ?source ;
+#          mr:target ?target .
+#        filter(?source in (%s))}
+#          UNION
+#          {?map mr:source ?source ;
+#          mr:target ?target .
+#        filter(?target in (%s))}
+#         }
+#     }
+#     ''' % (sources, targets)
+#     results = fuseki_process.run_query(qstr, debug=debug)
+#     return results
 
 

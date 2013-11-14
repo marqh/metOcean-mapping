@@ -176,7 +176,7 @@ class Mapping(_DotMixin, namedtuple('Mapping', 'uri source target')):
         return referrer
 
     @staticmethod
-    def sparql_retriever(uri, val=True, rep=True):
+    def sparql_retriever(uri, valid=True, rep=True):
         vstr = ''
         if val:
             vstr += '\tFILTER (?status NOT IN ("Deprecated", "Broken"))'
@@ -1254,6 +1254,47 @@ class ScopedProperty(object):
             ''' % (subj_pref, sha1, search_string)
        return qstr, instr
 
+
+class mediator(object):
+    # @staticmethod
+    # def sparql_retriever(uri):
+
+    #     return qstr
+
+    @staticmethod
+    def sparql_creator(po_dict):
+        allowed_preds = set(('mr:hasFormat','rdf:label'))
+        preds = set(po_dict)
+        if not preds == allowed_preds:
+            ec = '''{} is not a subset of the allowed predicates set
+                    for a scopedProperty record
+                    {}'''
+            ec = ec.format(preds, allowed_preds)
+            raise ValueError(ec)
+        fformat = po_dict['mr:hasFormat']
+        label = po_dict['rdf:label']
+        ff = fformat.rstrip('>').split('/')[-1]
+        med = '<http://www.metarelate.net/metOcean/mediates/{}/{}>'.format(ff, label)
+        qstr = '''
+        SELECT ?mediator
+        WHERE
+        { GRAPH <http://metarelate.net/concepts.ttl> {
+        %s a mr:Mediator ;
+             rdf:label "%s" ;
+             mr:hasFormat <http://www.metarelate.net/metOcean/format/%s> ;
+             mr:saveCache "True" .
+             } }
+        ''' % (med, label, fformat)
+        instr = '''
+        INSERT DATA
+        { GRAPH <http://metarelate.net/concepts.ttl> {
+        %s a mr:Mediator ;
+             rdf:label "%s" ;
+             mr:hasFormat <http://www.metarelate.net/metOcean/format/%s> ;
+             mr:saveCache "True" .
+             } }
+        ''' % (med, label, fformat)
+       return qstr, instr
 
 def make_hash(pred_obj, omitted=None):
     """ creates and returns an sha-1 hash of the elements in the pred_obj

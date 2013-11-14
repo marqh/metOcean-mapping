@@ -28,7 +28,7 @@ from django.core.urlresolvers import reverse
 from django.utils import formats
 from django.utils.safestring import mark_safe
 
-
+import metocean
 import metocean.prefixes as prefixes
 import metocean.queries as moq
 from settings import READ_ONLY
@@ -415,7 +415,9 @@ class MappingMeta(forms.Form):
         #         raise forms.ValidationError(e)
         #  worried about this, prevents updates to deprecate etc
         if map_id:
-            mapping = moq.get_mapping_by_id(fuseki_process, map_id)
+            #mapping = moq.get_mapping_by_id(fuseki_process, map_id)
+            qstr = metocean.Mapping.get_mapping_by_id(map_id)
+            mapping = fuseki_process.run_query(qstr)
             if not mapping:
                 raise forms.ValidationError('the mapping Id is not valid')
             changed = False
