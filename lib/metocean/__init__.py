@@ -830,7 +830,8 @@ class Property(_DotMixin, namedtuple('Property', 'uri name value operator')):
 
     @property
     def complete(self):
-        return self.simple and self.value is not None and self.value.complete
+        return self.simple and self.value is not None and \
+            self.operator is not None
 
     def dot(self, graph, parent, name=None):
         """
@@ -1049,10 +1050,6 @@ class Item(_DotMixin, namedtuple('Item', 'data notation')):
             fmt = '{cls}(data={self.data!r}, notation={self.notation!r})'
         return fmt.format(self=self, cls=type(self).__name__)
 
-    @property
-    def complete(self):
-        return self.data is not None and self.notation is not None
-
     def dot(self):
         """
         Return a Dot escaped string representation of the mapping item.
@@ -1119,7 +1116,6 @@ class ValueMap(object):
             }
             }
             ''' % (search_string)
-            results = fuseki_process.run_query(qstr, debug=debug)
             sha1 = make_hash(po_dict)
             instr = '''INSERT DATA {
             GRAPH <http://metarelate.net/concepts.ttl> {
@@ -1183,7 +1179,6 @@ class Value(object):
             }
             }
             ''' % (search_string)
-            results = fuseki_process.run_query(qstr, debug=debug)
             sha1 = make_hash(po_dict)
             instr = '''INSERT DATA {
             GRAPH <http://metarelate.net/concepts.ttl> {
@@ -1246,7 +1241,6 @@ class ScopedProperty(object):
             }
             }
             ''' % (search_string)
-            results = fuseki_process.run_query(qstr, debug=debug)
             sha1 = make_hash(po_dict)
             instr = '''INSERT DATA {
             GRAPH <http://metarelate.net/concepts.ttl> {
@@ -1312,6 +1306,7 @@ class Mediator(object):
              } }
         ''' % (med, label, fformat)
         return qstr, instr
+
 
 def make_hash(pred_obj, omitted=None):
     """ creates and returns an sha-1 hash of the elements in the pred_obj

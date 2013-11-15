@@ -142,18 +142,18 @@ import hashlib
 #                 save_string += '\t.\n'
 #     return save_string
 
-def _vocab_graphs():
-    """ returns a list of the graphs which contain thirds party vocabularies """
-    vocab_graphs = []
-    vocab_graphs.append('<http://metarelate.net/formats.ttl>')
-    vocab_graphs.append('<http://um/umdpF3.ttl>')
-    vocab_graphs.append('<http://um/stashconcepts.ttl>')
-    vocab_graphs.append('<http://um/fieldcode.ttl>')
-    vocab_graphs.append('<http://cf/cf-model.ttl>')
-    vocab_graphs.append('<http://cf/cf-standard-name-table.ttl>')
-    vocab_graphs.append('<http://grib/apikeys.ttl>')
-    vocab_graphs.append('<http://openmath/ops.ttl>')
-    return vocab_graphs
+# def _vocab_graphs():
+#     """ returns a list of the graphs which contain thirds party vocabularies """
+#     vocab_graphs = []
+#     vocab_graphs.append('<http://metarelate.net/formats.ttl>')
+#     vocab_graphs.append('<http://um/umdpF3.ttl>')
+#     vocab_graphs.append('<http://um/stashconcepts.ttl>')
+#     vocab_graphs.append('<http://um/fieldcode.ttl>')
+#     vocab_graphs.append('<http://cf/cf-model.ttl>')
+#     vocab_graphs.append('<http://cf/cf-standard-name-table.ttl>')
+#     vocab_graphs.append('<http://grib/apikeys.ttl>')
+#     vocab_graphs.append('<http://openmath/ops.ttl>')
+#     return vocab_graphs
     
 
 # def query_cache(fuseki_process, graph, debug=False):
@@ -177,23 +177,23 @@ def _vocab_graphs():
 #     results = fuseki_process.run_query(qstr, debug=debug)
 #     return results
 
-def get_contacts(fuseki_process, register, debug=False):
-    """
-    return a list of contacts from the tdb which are part of the named register
+# def get_contacts(fuseki_process, register, debug=False):
+#     """
+#     return a list of contacts from the tdb which are part of the named register
     
-    """
-    qstr = '''
-    SELECT ?s ?prefLabel ?def
-    WHERE
-    { GRAPH <http://metarelate.net/contacts.ttl> {
-        ?s skos:inScheme <http://www.metarelate.net/metOcean/%s> ;
-           skos:prefLabel ?prefLabel ;
-           skos:definition ?def ;
-           dc:valid ?valid .
-    } }
-    ''' % register
-    results = fuseki_process.run_query(qstr, debug=debug)
-    return results
+#     """
+#     qstr = '''
+#     SELECT ?s ?prefLabel ?def
+#     WHERE
+#     { GRAPH <http://metarelate.net/contacts.ttl> {
+#         ?s skos:inScheme <http://www.metarelate.net/metOcean/%s> ;
+#            skos:prefLabel ?prefLabel ;
+#            skos:definition ?def ;
+#            dc:valid ?valid .
+#     } }
+#     ''' % register
+#     results = fuseki_process.run_query(qstr, debug=debug)
+#     return results
 
 # def create_contact(fuseki_process, reg, contact, gh_id, creation, debug=False):
 #     """
@@ -278,72 +278,72 @@ def get_contacts(fuseki_process, register, debug=False):
 #             print_string += '\n'
 #     return print_string
 
-def get_all_notation_note(fuseki_process, graph, debug=False):
-    """
-    return all names, skos:notes and skos:notations from the stated graph
-    """
-    qstr = '''SELECT ?name ?notation ?units
-    WHERE
-    {GRAPH <%s>{
-    ?name skos:note ?units ;
-          skos:notation ?notation .
-    }
-    }
-    order by ?name
-    ''' % graph
-    results = fuseki_process.run_query(qstr, debug=debug)
-    return results
+# def get_all_notation_note(fuseki_process, graph, debug=False):
+#     """
+#     return all names, skos:notes and skos:notations from the stated graph
+#     """
+#     qstr = '''SELECT ?name ?notation ?units
+#     WHERE
+#     {GRAPH <%s>{
+#     ?name skos:note ?units ;
+#           skos:notation ?notation .
+#     }
+#     }
+#     order by ?name
+#     ''' % graph
+#     results = fuseki_process.run_query(qstr, debug=debug)
+#     return results
 
-def get_label(fuseki_process, subject, debug=False):
-    """
-    return the skos:notation for a subject, if it exists
+# def get_label(fuseki_process, subject, debug=False):
+#     """
+#     return the skos:notation for a subject, if it exists
     
-    """
-    subject = str(subject)
-    if not subject.startswith('<') and not subject.startswith('"'):
-        subj_str = '"{}"'.format(subject)
-    else:
-        subj_str = subject
-    qstr = ''' SELECT ?notation 
-    WHERE { {'''
-    for graph in _vocab_graphs():
-        qstr += '\n\tGRAPH %s {' % graph
-        qstr += '\n\t?s skos:notation ?notation . }}\n\tUNION {'
-    qstr = qstr.rstrip('\n\tUNION {')
-    qstr += '\n\tFILTER(?s = %(sub)s) }' % {'sub':subj_str}
-    results = fuseki_process.run_query(qstr, debug=debug)
-    if len(results) == 0:
-        hash_split = subject.split('#')
-        if len(hash_split) == 2 and hash_split[1].endswith('>'):
-            label = hash_split[1].rstrip('>')
-        elif len(subject.split('/')) < 3:
-             label = subject
-        else:
-            # raise ValueError('{} returns no notation'.format(subject))
-            label = subject
-    elif len(results) >1:
-        raise ValueError('{} returns multiple notation'.format(subject))
-    else:
-        label = results[0]['notation']
-    return label
+#     """
+#     subject = str(subject)
+#     if not subject.startswith('<') and not subject.startswith('"'):
+#         subj_str = '"{}"'.format(subject)
+#     else:
+#         subj_str = subject
+#     qstr = ''' SELECT ?notation 
+#     WHERE { {'''
+#     for graph in _vocab_graphs():
+#         qstr += '\n\tGRAPH %s {' % graph
+#         qstr += '\n\t?s skos:notation ?notation . }}\n\tUNION {'
+#     qstr = qstr.rstrip('\n\tUNION {')
+#     qstr += '\n\tFILTER(?s = %(sub)s) }' % {'sub':subj_str}
+#     results = fuseki_process.run_query(qstr, debug=debug)
+#     if len(results) == 0:
+#         hash_split = subject.split('#')
+#         if len(hash_split) == 2 and hash_split[1].endswith('>'):
+#             label = hash_split[1].rstrip('>')
+#         elif len(subject.split('/')) < 3:
+#              label = subject
+#         else:
+#             # raise ValueError('{} returns no notation'.format(subject))
+#             label = subject
+#     elif len(results) >1:
+#         raise ValueError('{} returns multiple notation'.format(subject))
+#     else:
+#         label = results[0]['notation']
+#     return label
 
 
-def subject_and_plabel(fuseki_process, graph, debug=False):
-    """
-    selects subject and prefLabel from a particular graph
+# def subject_and_plabel(fuseki_process, graph, debug=False):
+#     """
+#     selects subject and prefLabel from a particular graph
     
-    """
-    qstr = '''
-        SELECT ?subject ?prefLabel ?notation
-        WHERE {
-            GRAPH <%s> {
-            ?subject skos:notation ?notation .
-            OPTIONAL {?subject skos:prefLabel ?prefLabel . }}
-        }
-        ORDER BY ?subject
-    ''' % graph
-    results = fuseki_process.run_query(qstr, debug=debug)
-    return results
+#     """
+#     qstr = '''
+#         SELECT ?subject ?prefLabel ?notation
+#         WHERE {
+#             GRAPH <%s> {
+#             ?subject skos:notation ?notation .
+#             OPTIONAL {?subject skos:prefLabel ?prefLabel . }}
+#         }
+#         ORDER BY ?subject
+#     ''' % graph
+#     results = fuseki_process.run_query(qstr, debug=debug)
+#     return results
 
     
 

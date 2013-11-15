@@ -28,7 +28,6 @@ import urllib2
 
 import metocean
 import metocean.prefixes as prefixes
-import metocean.queries as queries
 
 
 # Configure the Apache Jena environment.
@@ -354,10 +353,8 @@ class FusekiServer(object):
         failures = {}
         mm_string = 'The following mappings are ambiguous, providing multiple '\
                     'targets in the same format for a particular source'
-        # failures[mm_string] = queries.multiple_mappings(self)
         failures[mm_string] = self.run_query(multiple_mappings())
         invalid_vocab = 'The following mappings contain an undeclared URI'
-        # failures[invalid_vocab] = queries.valid_vocab(self)
         failures[invalid_vocab] = self.run_query(valid_vocab())
         return failures
 
@@ -400,19 +397,81 @@ class FusekiServer(object):
             ec = 'Error connection to Fuseki server on {}.\n server returned {}'
             ec = ec.format(BASEURL, err)
             raise RuntimeError(ec)
-            # self.stop()
-            # self.start()
-            # try:
-            #     trydata = opener.open(urllib2.Request(BASEURL)).read()
-            # except urllib2.URLError as err2:
-            #     ec += ec + '\n' + '{}'.format(err2)
-            #     raise RuntimeError(ec)
         if output == "json":
             return process_data(data)
         elif output == "text":
             return data
         else:
             return data
+
+    def get_label(self, subject, debug=False):
+        """
+        return the skos:notation for a subject, if it exists
+
+        """
+        subject = str(subject)
+        if not subject.startswith('<') and not subject.startswith('"'):
+            subj_str = '"{}"'.format(subject)
+        else:
+            subj_str = subject
+        qstr = ''' SELECT ?notation 
+        WHERE { {'''
+        for graph in _vocab_graphs():
+            qstr += '\n\tGRAPH %s {' % graph
+            qstr += '\n\t?s skos:notation ?notation . }}\n\tUNION {'
+        qstr = qstr.rstrip('\n\tUNION {')
+        qstr += '\n\tFILTER(?s = %(sub)s) }' % {'sub':subj_str}
+        results = self.run_query(qstr, debug=debug)
+        if len(results) == 0:
+            hash_split = subject.split('#')
+            if len(hash_split) == 2 and hash_split[1].endswith('>'):
+                label = hash_split[1].rstrip('>')
+            else:
+                # raise ValueError('{} returns no notation'.format(subject))
+                label = subject
+        elif len(results) >1:
+            raise ValueError('{} returns multiple notation'.format(subject))
+        else:
+            label = results[0]['notation']
+        return label
+
+    def get_contacts(self, register, debug=False):
+        """
+        return a list of contacts from the tdb which are part of the named register
+
+        """
+        qstr = '''
+        SELECT ?s ?prefLabel ?def
+        WHERE
+        { GRAPH <http://metarelate.net/contacts.ttl> {
+            ?s skos:inScheme <http://www.metarelate.net/metOcean/%s> ;
+               skos:prefLabel ?prefLabel ;
+               skos:definition ?def ;
+               dc:valid ?valid .
+        } }
+        ''' % register
+        results = self.run_query(qstr, debug=debug)
+        return results
+
+
+    def subject_and_plabel(self, graph, debug=False):
+        """
+        selects subject and prefLabel from a particular graph
+
+        """
+        qstr = '''
+            SELECT ?subject ?prefLabel ?notation
+            WHERE {
+                GRAPH <%s> {
+                ?subject skos:notation ?notation .
+                OPTIONAL {?subject skos:prefLabel ?prefLabel . }}
+            }
+            ORDER BY ?subject
+        ''' % graph
+        results = self.run_query(qstr, debug=debug)
+        return results
+
+
 
     def retrieve_mappings(self, source, target):
         """
@@ -469,7 +528,6 @@ class FusekiServer(object):
     def _retrieve_component(self, uri, base=True):
         qstr = metocean.Component.sparql_retriever(uri)
         qcomp = self.retrieve(qstr)
-        # qcomp = queries.retrieve_component(self, uri)
         if qcomp is None:
             msg = 'Cannot retrieve URI {!r} from triple-store.'
             raise ValueError(msg.format(uri))
@@ -481,24 +539,20 @@ class FusekiServer(object):
         if qcomp['property']:
             properties = []
             for puri in qcomp['property']:
-                # qprop = queries.retrieve_property(self, puri)
                 qstr = metocean.Property.sparql_retriever(puri)
                 qprop = self.retrieve(qstr)
                 name = qprop['name']
-                name = metocean.Item(name,
-                                     queries.get_label(self, name))
+                name = metocean.Item(name, self.get_label(name))
                 curi = qprop.get('component')
                 if curi is not None:
                     value = self._retrieve_component(curi, base=False)
                 else:
                     value = qprop.get('value')
                     if value is not None:
-                        value = metocean.Item(value,
-                                              queries.get_label(self, value))
+                        value = metocean.Item(value, self.get_label(value))
                     op = qprop.get('operator')
                     if op is not None:
-                        op = metocean.Item(op,
-                                           queries.get_label(self, op))
+                        op = metocean.Item(op, self.get_label(op))
                 properties.append(metocean.Property(puri, name, value, op))
             result = metocean.PropertyComponent(uri, properties)
         if qcomp['subComponent']:
@@ -511,7 +565,7 @@ class FusekiServer(object):
                 result = metocean.Component(uri, components)
         if base:
             scheme = qcomp['format']
-            scheme = metocean.Item(scheme, queries.get_label(self, scheme))
+            scheme = metocean.Item(scheme, self.get_label(scheme))
             result = metocean.Concept(uri, scheme, result)
         return result
 
@@ -527,7 +581,6 @@ class FusekiServer(object):
         else:
             raise ValueError('inv = {}, not "True" or "False"'.format(inv))
         value_map = {'valueMap':valmap_id, 'mr:source':{}, 'mr:target':{}}
-        # vm_record = queries.retrieve_valuemap(self, valmap_id)
         qstr = metocean.ValueMap.sparql_retriever(valmap_id)
         vm_record = self.retrieve(qstr)
         if inv:
@@ -547,7 +600,6 @@ class FusekiServer(object):
         
         """
         value_dict = {'value':val_id}
-        # val = queries.retrieve_value(self, val_id)
         qstr = metocean.Value.sparql_retriever(val_id)
         val = self.retrieve(qstr)
         for key in val.keys():
@@ -555,7 +607,6 @@ class FusekiServer(object):
         for sc_prop in ['mr:subject', 'mr:object']:
             pid = value_dict.get(sc_prop)
             if pid:
-                # prop = queries.retrieve_scoped_property(self, pid)
                 qstr = metocean.ScopedProperty.sparql_retriever(pid)
                 prop = self.retrieve(qstr)
                 if prop:
@@ -565,7 +616,6 @@ class FusekiServer(object):
                         value_dict[sc_prop]['mr:{}'.format(pkey)] = pv
                         if pkey == 'hasProperty':
                             pr = value_dict[sc_prop]['mr:{}'.format(pkey)]
-                            # aprop = queries.retrieve_property(self, pr)
                             qstr = metocean.Property.sparql_retriever(pr)
                             aprop = self.retrieve(qstr)
                             value_dict[sc_prop]['mr:{}'.format(pkey)] = {'property':pv}
@@ -828,3 +878,35 @@ def mapping_by_properties(prop_list):
         }
         ''' % fstr
     return qstr
+
+
+# def get_all_notation_note(fuseki_process, graph, debug=False):
+#     """
+#     return all names, skos:notes and skos:notations from the stated graph
+#     """
+#     qstr = '''SELECT ?name ?notation ?units
+#     WHERE
+#     {GRAPH <%s>{
+#     ?name skos:note ?units ;
+#           skos:notation ?notation .
+#     }
+#     }
+#     order by ?name
+#     ''' % graph
+#     results = fuseki_process.run_query(qstr, debug=debug)
+#     return results
+
+
+
+def _vocab_graphs():
+    """returns a list of the graphs which contain thirds party vocabularies """
+    vocab_graphs = []
+    vocab_graphs.append('<http://metarelate.net/formats.ttl>')
+    vocab_graphs.append('<http://um/umdpF3.ttl>')
+    vocab_graphs.append('<http://um/stashconcepts.ttl>')
+    vocab_graphs.append('<http://um/fieldcode.ttl>')
+    vocab_graphs.append('<http://cf/cf-model.ttl>')
+    vocab_graphs.append('<http://cf/cf-standard-name-table.ttl>')
+    vocab_graphs.append('<http://grib/apikeys.ttl>')
+    vocab_graphs.append('<http://openmath/ops.ttl>')
+    return vocab_graphs
