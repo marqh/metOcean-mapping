@@ -470,57 +470,57 @@ class FusekiServer(object):
         results = self.run_query(qstr, debug=debug)
         return results
 
-    def retrieve_mappings(self, source, target):
-        """
-        return the format specific mappings for a particular source
-        and target format
+    # def retrieve_mappings(self, source, target):
+    #     """
+    #     return the format specific mappings for a particular source
+    #     and target format
 
-        """
-        if isinstance(source, basestring) and \
-                not metocean.Item(source).is_uri():
-            source = os.path.join('<http://www.metarelate.net/metOcean/format',
-                                  '{}>'.format(source.lower()))
-        if isinstance(target, basestring) and \
-                not metocean.Item(target).is_uri():
-            target = os.path.join('<http://www.metarelate.net/metOcean/format',
-                                  '{}>'.format(target.lower()))
-        qstr = '''
-        SELECT ?mapping ?source ?sourceFormat ?target ?targetFormat ?inverted
-        (GROUP_CONCAT(DISTINCT(?valueMap); SEPARATOR = '&') AS ?valueMaps)
-        WHERE { 
-        GRAPH <http://metarelate.net/mappings.ttl> { {
-        ?mapping mr:source ?source ;
-                 mr:target ?target ;
-                 mr:status ?status .
-        BIND("False" AS ?inverted)
-        OPTIONAL {?mapping mr:hasValueMap ?valueMap . }
-        FILTER (?status NOT IN ("Deprecated", "Broken"))
-        MINUS {?mapping ^dc:replaces+ ?anothermap}
-        }
-        UNION {
-        ?mapping mr:source ?target ;
-                 mr:target ?source ;
-                 mr:status ?status ;
-                 mr:invertible "True" .
-        BIND("True" AS ?inverted)
-        OPTIONAL {?mapping mr:hasValueMap ?valueMap . }
-        FILTER (?status NOT IN ("Deprecated", "Broken"))
-        MINUS {?mapping ^dc:replaces+ ?anothermap}
-        } }
-        GRAPH <http://metarelate.net/concepts.ttl> { 
-        ?source mr:hasFormat %s .
-        ?target mr:hasFormat %s .
-        }
-        }
-        GROUP BY ?mapping ?source ?sourceFormat ?target ?targetFormat ?inverted
-        ORDER BY ?mapping
+    #     """
+    #     if isinstance(source, basestring) and \
+    #             not metocean.Item(source).is_uri():
+    #         source = os.path.join('<http://www.metarelate.net/metOcean/format',
+    #                               '{}>'.format(source.lower()))
+    #     if isinstance(target, basestring) and \
+    #             not metocean.Item(target).is_uri():
+    #         target = os.path.join('<http://www.metarelate.net/metOcean/format',
+    #                               '{}>'.format(target.lower()))
+    #     qstr = '''
+    #     SELECT ?mapping ?source ?sourceFormat ?target ?targetFormat ?inverted
+    #     (GROUP_CONCAT(DISTINCT(?valueMap); SEPARATOR = '&') AS ?valueMaps)
+    #     WHERE { 
+    #     GRAPH <http://metarelate.net/mappings.ttl> { {
+    #     ?mapping mr:source ?source ;
+    #              mr:target ?target ;
+    #              mr:status ?status .
+    #     BIND("False" AS ?inverted)
+    #     OPTIONAL {?mapping mr:hasValueMap ?valueMap . }
+    #     FILTER (?status NOT IN ("Deprecated", "Broken"))
+    #     MINUS {?mapping ^dc:replaces+ ?anothermap}
+    #     }
+    #     UNION {
+    #     ?mapping mr:source ?target ;
+    #              mr:target ?source ;
+    #              mr:status ?status ;
+    #              mr:invertible "True" .
+    #     BIND("True" AS ?inverted)
+    #     OPTIONAL {?mapping mr:hasValueMap ?valueMap . }
+    #     FILTER (?status NOT IN ("Deprecated", "Broken"))
+    #     MINUS {?mapping ^dc:replaces+ ?anothermap}
+    #     } }
+    #     GRAPH <http://metarelate.net/concepts.ttl> { 
+    #     ?source mr:hasFormat %s .
+    #     ?target mr:hasFormat %s .
+    #     }
+    #     }
+    #     GROUP BY ?mapping ?source ?sourceFormat ?target ?targetFormat ?inverted
+    #     ORDER BY ?mapping
 
-        ''' % (source, target)
-        mappings = self.run_query(qstr)
-        mapping_list = []
-        for mapping in mappings:
-            mapping_list.append(self.structured_mapping(mapping))
-        return mapping_list
+    #     ''' % (source, target)
+    #     mappings = self.run_query(qstr)
+    #     mapping_list = []
+    #     for mapping in mappings:
+    #         mapping_list.append(self.structured_mapping(mapping))
+    #     return mapping_list
 
     def _retrieve_component(self, uri, base=True):
         qstr = metocean.Component.sparql_retriever(uri)
@@ -906,3 +906,117 @@ def _vocab_graphs():
     vocab_graphs.append('<http://grib/apikeys.ttl>')
     vocab_graphs.append('<http://openmath/ops.ttl>')
     return vocab_graphs
+
+
+
+class ValidMappingState(object):
+    """
+    A context manager providing the valid mappings only for the
+    life of the context
+
+    """
+    def __init__(fuseki_process):
+        self.fuseki_process = fuseki_process
+        self.valid_state = False
+
+    def __enter__(self):
+        cache_len = len(self.fuseki_process.query_cache())
+        self.entry_msg = ''
+        if cache_len != 0:
+            self.entry_msg = 'There are {} cached changes in the TDB'
+            self.entry_msg += 'the valid mapping state cannot be used.'
+            self.entry_msg += 'persist or revert the cache to use the'
+            self.entry_msg += 'ValidMappingState.'
+            self.entry_msg.format(cache_len)
+        else:
+            self.delete_invalid()
+            self.valid_state = True
+            self.entry_msg = 'Working with valid mappings only'
+        return self
+            
+    def __exit__(self):
+        self.exit_msg = ''
+        if self.valid_state:
+            self.fuseki_process.load()
+            self.exit_msg = 'TDB re-synchronised with static data'
+        else:
+            self.exit_msg = 'TDB untouched'
+
+    def delete_invalid(self):
+        """
+        remove all mapping which have been replaced or have do not
+        have a status of 'draft, proposed or approved' from the TDB
+
+        """
+        instr = '''
+        DELETE
+        { GRAPH <http://metarelate.net/mappings.ttl> 
+            {
+            ?mapping ?p ?o .
+            }
+        }
+        WHERE
+        { GRAPH <http://metarelate.net/mappings.ttl> 
+            { {
+            ?mapping mr:status "Deprecated" .
+            }
+            UNION
+            {
+            ?mapping mr:status "Broken" .
+            }
+            UNION
+            {
+            ?mapping ^dc:replaces+ ?anothermap .
+            }
+            }
+        }
+        '''
+        delete_results = self.run_query(instr, update=True, debug=debug)
+
+    def retrieve_mappings(self, source, target):
+        """
+        return the format specific mappings for a particular source
+        and target format
+
+        """
+        if isinstance(source, basestring) and \
+                not metocean.Item(source).is_uri():
+            source = os.path.join('<http://www.metarelate.net/metOcean/format',
+                                  '{}>'.format(source.lower()))
+        if isinstance(target, basestring) and \
+                not metocean.Item(target).is_uri():
+            target = os.path.join('<http://www.metarelate.net/metOcean/format',
+                                  '{}>'.format(target.lower()))
+        qstr = '''
+        SELECT ?mapping ?source ?sourceFormat ?target ?targetFormat ?inverted
+        (GROUP_CONCAT(DISTINCT(?valueMap); SEPARATOR = '&') AS ?valueMaps)
+        WHERE { 
+        GRAPH <http://metarelate.net/mappings.ttl> { {
+        ?mapping mr:source ?source ;
+                 mr:target ?target ;
+                 mr:status ?status .
+        BIND("False" AS ?inverted)
+        OPTIONAL {?mapping mr:hasValueMap ?valueMap . }
+        }
+        UNION {
+        ?mapping mr:source ?target ;
+                 mr:target ?source ;
+                 mr:status ?status ;
+                 mr:invertible "True" .
+        BIND("True" AS ?inverted)
+        OPTIONAL {?mapping mr:hasValueMap ?valueMap . }
+        } }
+        GRAPH <http://metarelate.net/concepts.ttl> { 
+        ?source mr:hasFormat %s .
+        ?target mr:hasFormat %s .
+        }
+        }
+        GROUP BY ?mapping ?source ?sourceFormat ?target ?targetFormat ?inverted
+        ORDER BY ?mapping
+
+        ''' % (source, target)
+        mappings = self.fuseki_process.run_query(qstr)
+        mapping_list = []
+        for mapping in mappings:
+            mapping_list.append(self.fuseki_process.structured_mapping(mapping))
+        return mapping_list
